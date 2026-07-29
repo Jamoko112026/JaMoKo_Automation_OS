@@ -7,7 +7,13 @@ Zentrales Register aller Workflows im JaMoKo Automation OS.
 | WF-0001 | Task Intake | active | noch offen | `02_WORKFLOWS/WF-0001_Task_Intake/` |
 | WF-0002 | Trello Board Setup | released | v1.0 | `02_WORKFLOWS/WF-0002_Trello_Board_Setup/` |
 | WF-0003 | Dashboard Initial Cards | released | v1.0 | `02_WORKFLOWS/WF-0003_Dashboard_Initial_Cards/` |
-| WF-0004 | Dashboard Sync | planned | – | `02_WORKFLOWS/WF-0004_Dashboard_Sync/` |
+| WF-0004 | Dashboard Sync | released | v1.0 | `02_WORKFLOWS/WF-0004_Dashboard_Sync/` |
+
+## Standards
+
+| ID | Name | Status | Version | Pfad |
+|---|---|---|---|---|
+| STD-0001 | Dashboard Synchronisation | active | v1.0 | `04_STANDARDS/STD-0001_Dashboard_Synchronisation/` |
 
 ## Statusdefinitionen
 
