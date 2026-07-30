@@ -12,3 +12,4 @@ Dieses Register verwaltet alle vergebenen Workflow-IDs im JaMoKo Automation OS.
 ## Nächste freie ID
 
 WF-0005
+| WF-0005 | Workflow | Dashboard Maintenance | planned |

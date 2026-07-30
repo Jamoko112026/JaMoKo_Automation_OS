@@ -22,3 +22,4 @@ Zentrales Register aller Workflows im JaMoKo Automation OS.
 - `released` – getestet und freigegeben
 - `deprecated` – wird nicht mehr weiterentwickelt
 - `archived` – abgeschlossen und archiviert
+| WF-0005 | Dashboard Maintenance | planned | v0.1 | `02_WORKFLOWS/WF-0005_Dashboard_Maintenance/` |
