@@ -35,7 +35,7 @@ Die Vergabe neuer Workflow-IDs erfolgt über `id_registry.md`.
 |----|--------------------|--------|
 | WF-0006 | Customer Sync | reserved |
 | WF-0007 | Project Sync | reserved |
-| WF-0008 | Object Sync | reserved |
+| WF-0008 | Object Loader | reserved |
 | WF-0009 | GitHub Sync | reserved |
 | WF-0010 | Daily Review | reserved |
 

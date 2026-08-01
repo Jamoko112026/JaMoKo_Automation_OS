@@ -18,7 +18,7 @@ Dieses Register verwaltet alle vergebenen Workflow-IDs im JaMoKo Automation OS.
 | ID | Geplanter Workflow | Status |
 |---|---|---|
 | WF-0007 | Project Sync | reserved |
-| WF-0008 | Object Sync | reserved |
+| WF-0008 | Object Loader | reserved |
 | WF-0009 | GitHub Sync | reserved |
 | WF-0010 | Daily Review | reserved |
 
