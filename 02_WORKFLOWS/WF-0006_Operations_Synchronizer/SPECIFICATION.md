@@ -1,100 +1,111 @@
-# WF-0006 – Operations Synchronizer
+# WF-0006 – Specification
 
 ## Version
 
-0.1.0
+1.0.0
 
 ## Status
 
-development
+Stable
 
 ---
 
 # Ziel
 
-Synchronisiert Arbeitsobjekte mit dem JaMoKo Operations Dashboard in Trello.
+WF-0006 synchronisiert Operations-Objekte zwischen dem JaMoKo OS und dem Trello Operations Dashboard.
 
 ---
 
-# Eingaben
+# Fachliche Anforderungen
 
-## Datenquellen (v0.1.0)
+Der Workflow muss:
 
-- Interne Aufgabenliste (Testdaten)
-- Trello Board
-
----
-
-# Verarbeitung
-
-1. Trello-Karten laden
-2. Aufgabenquelle laden
-3. Karten anhand der Objekt-ID vergleichen
-4. Fehlende Karten erkennen
-5. Ziel-Liste bestimmen
-6. Neue Karten erstellen
-7. Bestehende Karten aktualisieren
-8. Synchronisationsbericht erzeugen
+- neue Operations-Objekte erkennen
+- bestehende Trello-Karten erkennen
+- Änderungen feststellen
+- fehlende Karten erzeugen
+- bestehende Karten aktualisieren
+- doppelte objectIds erkennen
+- doppelte Trello-Karten erkennen
+- einen Synchronisationsbericht erzeugen
 
 ---
 
-# Ausgaben
+# Eingabedaten
 
-- Neue Trello-Karten
-- Aktualisierte Trello-Karten
-- Synchronisationsprotokoll
+Operations-Objekte besitzen mindestens:
 
----
-
-# Ziel-Listen
-
-- 🎯 Fokus heute
-- ▶️ In Arbeit
-- 👀 Warten
-- 👥 Kunden
-- 📂 Projekte
-- 🤖 Automation OS
-- 🌐 Websites
-- 📥 Inbox
-- 💡 Ideen
+- objectId
+- objectType
+- title
+- status
+- description
+- source
+- priority
 
 ---
 
-# Regeln
+# Ausgabe
 
-- Keine doppelte Objekt-ID
-- Jede Karte besitzt genau eine Objekt-ID
-- Status bestimmt die Ziel-Liste
-- Synchronisation ist beliebig oft wiederholbar
-- Keine vorhandenen Karten überschreiben, wenn sich nichts geändert hat
+Für jedes Objekt entsteht genau eines der Ergebnisse:
+
+- create
+- update
+- none
+- error
+
+---
+
+# Workflow-Phasen
+
+1. Configuration
+2. Load Operations
+3. Build Operations Index
+4. Load Trello
+5. Build Trello Index
+6. Compare
+7. Create
+8. Update
+9. Logging
+10. Summary
+
+---
+
+# Validierung
+
+Der Workflow prüft:
+
+- objectId vorhanden
+- objectId eindeutig
+- Trello-Karte eindeutig
+- Vergleich möglich
 
 ---
 
 # Fehlerfälle
 
-- Trello nicht erreichbar
-- Fehlende List-ID
-- Ungültige Objekt-ID
+- keine Operations-Objekte
+- doppelte objectId
+- mehrere Trello-Karten mit gleicher objectId
 - API-Fehler
+- ungültige Daten
 
 ---
 
-# Abhängigkeiten
+# Nicht Bestandteil von Version 1.0
 
-- Trello API
-- n8n
-- WF-0004
-- WF-0005
+- direkte JaMoKo-OS-Anbindung
+- Validation Layer
+- Board-ID aus zentraler Konfiguration
+- Recovery-Mechanismen
 
 ---
 
-# Zukunft
+# Referenzen
 
-Geplante Datenquellen:
-
-- JaMoKo OS
-- CRM
-- GitHub
-- Persönliche Verwaltung
-- Google Kalender
-- Website
+- README.md
+- FLOW.md
+- ARCHITECTURE.md
+- TESTS.md
+- CHANGELOG.md
+- KNOWN_ISSUES.md

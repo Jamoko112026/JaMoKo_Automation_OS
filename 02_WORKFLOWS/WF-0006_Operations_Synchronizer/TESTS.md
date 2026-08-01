@@ -1,137 +1,181 @@
-# WF-0006 – Tests
+# WF-0006 – Test Specification
 
 ## Version
 
-0.1.0
+1.0.0
 
 ## Status
 
-development
+Stable
 
 ---
 
-## Testziel
+# Testziel
 
-Die Tests prüfen, ob der Operations Synchronizer Arbeitsobjekte zuverlässig mit dem JaMoKo Operations Dashboard synchronisiert.
+Die Tests prüfen, ob WF-0006 Operations-Objekte zuverlässig mit dem JaMoKo Operations Dashboard synchronisiert.
 
----
+Dabei werden alle Kernfunktionen des Workflows überprüft:
 
-## TEST-001 – Fehlende Karte erstellen
-
-### Voraussetzung
-
-- Ein Arbeitsobjekt mit einer gültigen Objekt-ID existiert.
-- Im Trello-Board gibt es noch keine Karte mit dieser Objekt-ID.
-
-### Erwartetes Ergebnis
-
-- Genau eine neue Karte wird erstellt.
-- Die Karte liegt in der vorgesehenen Liste.
-- Die Objekt-ID ist in der Kartenbeschreibung enthalten.
+- Laden der Operations-Objekte
+- Laden der Trello-Karten
+- Vergleich über `objectId`
+- Erstellen neuer Karten
+- Aktualisieren bestehender Karten
+- Zusammenfassung des Synchronisationslaufs
 
 ---
 
-## TEST-002 – Doppelte Karte verhindern
+# TEST-001 – Neue Karte erstellen
 
-### Voraussetzung
+## Voraussetzung
 
-- Eine Karte mit derselben Objekt-ID existiert bereits.
+- Ein Operations-Objekt besitzt eine gültige `objectId`.
+- Im Trello-Board existiert keine Karte mit dieser `objectId`.
 
-### Erwartetes Ergebnis
+## Erwartetes Ergebnis
+
+- Genau eine neue Trello-Karte wird erstellt.
+- Die Karte wird der richtigen Liste zugeordnet.
+- Die `objectId` ist im Titel oder in der Beschreibung vorhanden.
+
+---
+
+# TEST-002 – Doppelte Karte verhindern
+
+## Voraussetzung
+
+- Eine Trello-Karte mit derselben `objectId` existiert bereits.
+
+## Erwartetes Ergebnis
 
 - Es wird keine zweite Karte erstellt.
-- Die vorhandene Karte bleibt bestehen.
+- Das Ergebnis lautet `none`.
 
 ---
 
-## TEST-003 – Geänderte Karte aktualisieren
+# TEST-003 – Bestehende Karte aktualisieren
 
-### Voraussetzung
+## Voraussetzung
 
-- Eine Karte mit derselben Objekt-ID existiert.
-- Titel, Beschreibung, Status oder Ziel-Liste wurden geändert.
+- Eine Trello-Karte besitzt dieselbe `objectId`.
+- Titel oder Beschreibung unterscheiden sich vom Operations-Objekt.
 
-### Erwartetes Ergebnis
+## Erwartetes Ergebnis
 
-- Die vorhandene Karte wird aktualisiert.
+- Die Karte wird aktualisiert.
 - Es wird keine neue Karte erstellt.
 
 ---
 
-## TEST-004 – Unveränderte Karte ignorieren
+# TEST-004 – Keine Änderung erforderlich
 
-### Voraussetzung
+## Voraussetzung
 
-- Arbeitsobjekt und Trello-Karte enthalten dieselben relevanten Werte.
+Operations-Objekt und Trello-Karte sind identisch.
 
-### Erwartetes Ergebnis
+## Erwartetes Ergebnis
 
-- Die Karte wird nicht aktualisiert.
-- Das Ergebnis wird als `unchanged` gezählt.
-
----
-
-## TEST-005 – Karte in richtige Liste verschieben
-
-### Voraussetzung
-
-- Der Status eines Arbeitsobjekts wurde geändert.
-- Der neue Status gehört zu einer anderen Trello-Liste.
-
-### Erwartetes Ergebnis
-
-- Die vorhandene Karte wird in die richtige Liste verschoben.
-- Die Objekt-ID bleibt unverändert.
+- Keine Aktualisierung.
+- Ergebnis: `none`.
 
 ---
 
-## TEST-006 – Ungültige Objekt-ID
+# TEST-005 – Kartenliste ändern
 
-### Voraussetzung
+## Voraussetzung
 
-- Ein Arbeitsobjekt besitzt keine oder eine ungültige Objekt-ID.
+Der Status eines Operations-Objekts hat sich geändert.
 
-### Erwartetes Ergebnis
+## Erwartetes Ergebnis
 
-- Es wird keine Karte erstellt oder aktualisiert.
-- Der Fehler erscheint im Synchronisationsbericht.
-
----
-
-## TEST-007 – Wiederholter Durchlauf
-
-### Voraussetzung
-
-- Der Workflow wurde bereits einmal erfolgreich ausgeführt.
-- Die Quelldaten wurden nicht verändert.
-
-### Erwartetes Ergebnis
-
-- Ein zweiter Durchlauf erzeugt keine Duplikate.
-- Es erfolgen keine unnötigen Aktualisierungen.
+- Die Karte wird in die korrekte Trello-Liste verschoben.
 
 ---
 
-## TEST-008 – Synchronisationsbericht
+# TEST-006 – Fehlende objectId
 
-### Erwartetes Ergebnis
+## Voraussetzung
 
-Der Workflow liefert mindestens:
+Ein Operations-Objekt besitzt keine gültige `objectId`.
 
+## Erwartetes Ergebnis
+
+- Der Workflow beendet die Verarbeitung mit einer Fehlermeldung.
+- Es wird keine Trello-Karte erzeugt.
+
+---
+
+# TEST-007 – Doppelte objectId
+
+## Voraussetzung
+
+Mehrere Operations-Objekte besitzen dieselbe `objectId`.
+
+## Erwartetes Ergebnis
+
+- Der Workflow erkennt den Konflikt.
+- Die Verarbeitung wird abgebrochen.
+
+---
+
+# TEST-008 – Mehrere Trello-Karten
+
+## Voraussetzung
+
+Mehrere Trello-Karten besitzen dieselbe `objectId`.
+
+## Erwartetes Ergebnis
+
+- Ergebnis: `error`
+- Keine automatische Aktualisierung.
+
+---
+
+# TEST-009 – Wiederholter Durchlauf
+
+## Voraussetzung
+
+Der Workflow wird zweimal ohne Datenänderungen ausgeführt.
+
+## Erwartetes Ergebnis
+
+- Keine Duplikate.
+- Keine unnötigen Aktualisierungen.
+
+---
+
+# TEST-010 – Summary
+
+## Erwartetes Ergebnis
+
+Die Summary enthält mindestens:
+
+- Gesamtzahl der Operations-Objekte
 - Anzahl erstellter Karten
 - Anzahl aktualisierter Karten
-- Anzahl unveränderter Karten
-- Anzahl fehlerhafter Objekte
+- Anzahl unveränderter Objekte
+- Anzahl Fehler
 - Workflow-ID
 - Workflow-Version
 
 ---
 
-## Abnahmekriterium für Version 0.1.0
+# Abnahmekriterien
 
-Version 0.1.0 gilt als funktionsfähig, wenn:
+Version **1.0.0** gilt als freigegeben, wenn:
 
-- TEST-001 bis TEST-008 erfolgreich durchgeführt wurden,
-- keine doppelten Karten entstehen,
-- die Wiederholbarkeit nachgewiesen ist,
-- und alle Fehler nachvollziehbar protokolliert werden.
+- alle Testfälle erfolgreich durchlaufen wurden,
+- keine doppelten Trello-Karten entstehen,
+- Wiederholungen reproduzierbar sind,
+- alle Fehler eindeutig protokolliert werden,
+- Create-, Update- und Summary-Prozess erfolgreich arbeiten.
+
+---
+
+# Letzte Prüfung
+
+**Datum:** 2026-08-01
+
+**Ergebnis:** Alle Kernfunktionen erfolgreich getestet.
+
+**Status:** Release 1.0 freigegeben.

@@ -2,62 +2,133 @@
 
 ## Status
 
-development
+**Stable**
 
 ## Version
 
-0.1.0
+**1.0.0**
 
 ## Typ
 
 Synchronization Workflow
 
-## Zweck
+---
 
-WF-0006 hält das JaMoKo Operations Dashboard in Trello aktuell.
+# Zweck
 
-Der Workflow sammelt relevante Aufgaben und Arbeitsobjekte aus den angebundenen Systemen, prüft deren vorhandenen Trello-Status und erstellt oder aktualisiert die benötigten Karten.
+WF-0006 synchronisiert Operations-Objekte zwischen dem JaMoKo OS und dem JaMoKo Operations Dashboard in Trello.
 
-## Ziel
+Der Workflow stellt sicher, dass alle relevanten Arbeitsobjekte aktuell, eindeutig und nachvollziehbar im Operations Dashboard abgebildet werden.
 
-Alles, woran JaMoKo aktuell arbeitet, soll im Operations Dashboard sichtbar sein.
+---
 
-## Erste Ausbaustufe
+# Ziele
 
-Die erste Version synchronisiert zunächst eine zentrale Aufgabenquelle mit Trello.
+Version 1.0.0 unterstützt folgende Funktionen:
 
-Sie soll:
+- Laden der Workflow-Konfiguration
+- Laden definierter Operations-Objekte
+- Laden vorhandener Trello-Karten
+- Aufbau eines Operations Index
+- Aufbau eines Trello Index
+- Vergleich über die `objectId`
+- Erkennung neuer Objekte
+- Erkennung geänderter Objekte
+- Erkennung unveränderter Objekte
+- Erkennung mehrfacher Zuordnungen
+- Erstellen fehlender Trello-Karten
+- Aktualisieren bestehender Trello-Karten
+- Logging der Änderungen
+- Erstellung einer Zusammenfassung des Synchronisationslaufs
 
-- bestehende Trello-Karten einlesen
-- definierte Arbeitskarten einlesen
-- Karten anhand einer stabilen ID vergleichen
-- fehlende Karten erstellen
-- bestehende Karten aktualisieren
-- doppelte Karten verhindern
-- einen Synchronisationsbericht erzeugen
+---
 
-## Spätere Datenquellen
+# Datenquelle
 
-- JaMoKo OS
-- Automation OS
-- Kundenobjekte
-- Projekte
-- persönliche Verwaltung
-- GitHub
-- Kalender
-- E-Mail
+Version **1.0.0** verwendet kontrollierte Operations-Daten.
 
-## Zielsystem
+Die direkte Anbindung an das JaMoKo OS ist Bestandteil der Version **1.1**.
 
-Trello – JaMoKo Operations Dashboard
+---
 
-## Verantwortlicher Standard
+# Zielsystem
 
-- STD-0001 – Workflow Documentation Standard
+**JaMoKo Operations Dashboard (Trello)**
 
-## Abhängigkeiten
+---
 
-- WF-0004 – Dashboard Sync
-- WF-0005 – Dashboard Maintenance
-- Trello API
+# Architektur
+
+Der Workflow folgt dem JaMoKo Workflow Pattern.
+
+```text
+Configuration
+        │
+        ▼
+Load
+        │
+        ▼
+Index
+        │
+        ▼
+Compare
+        │
+        ▼
+Create / Update
+        │
+        ▼
+Logging
+        │
+        ▼
+Summary
+```
+
+Eine detaillierte Beschreibung befindet sich in **ARCHITECTURE.md**.
+
+---
+
+# Dokumentation
+
+Dieses Workflow-Projekt besteht aus folgenden Dokumenten:
+
+- README.md
+- ARCHITECTURE.md
+- FLOW.md
+- SPECIFICATION.md
+- TESTS.md
+- CHANGELOG.md
+- KNOWN_ISSUES.md
+
+---
+
+# Abhängigkeiten
+
 - n8n
+- Trello API
+- JaMoKo Operations Dashboard
+
+---
+
+# Roadmap
+
+## Version 1.1
+
+Geplant sind unter anderem:
+
+- direkte Anbindung an das JaMoKo OS
+- zentrale Verwaltung der Trello-Board-ID
+- Validation Layer
+- erweiterte Fehlerbehandlung
+- Workflow-Architekturstandard (`STD-0003`)
+
+---
+
+# Release
+
+**Version:** 1.0.0
+
+**Datum:** 2026-08-01
+
+**Status:** Stable
+
+WF-0006 ist der erste produktive Referenz-Workflow des **JaMoKo Automation OS** und bildet die Grundlage für zukünftige Workflow-Entwicklungen.
