@@ -1,0 +1,373 @@
+{
+  "name": "WF-0008 – Object Loader",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "6b232fa4-ff5d-4d61-b6e5-fce7ec1ffb58",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      workflow: {\n        id: \"WF-0008\",\n        name: \"Object Loader\",\n        version: \"0.2.0\",\n        status: \"development\"\n      },\n\n      source: {\n        system: \"GitHub\",\n        owner: \"Jamoko112026\",\n        repository: \"JaMoKo_OS\",\n        branch: \"main\",\n        root: \"01_Objects\",\n        fileName: \"object.md\"\n      },\n\n      validation: {\n        requiredFields: [\n          \"objectId\",\n          \"objectType\",\n          \"title\",\n          \"status\"\n        ]\n      },\n\n      normalization: {\n        objectIdUppercase: true,\n        objectTypeLowercase: true,\n        defaultPriority: \"normal\"\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "09478329-d82e-4f4f-8faa-771eb314464f",
+      "name": "02-Load Configuration"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/{{$json.source.owner}}/{{$json.source.repository}}/git/trees/{{$json.source.branch}}?recursive=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        416,
+        0
+      ],
+      "id": "c9072304-f6e9-40b9-8796-42638424a371",
+      "name": "03 – Load Repository Tree",
+      "credentials": {
+        "githubApi": {
+          "id": "JdkkyOWLPmMR1Rn1",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst config = $(\"02-Load Configuration\").first().json;\n\nconst tree = response.tree || [];\n\nconst files = tree\n  .filter(item =>\n    item.type === \"blob\" &&\n    item.path.startsWith(config.source.root + \"/\") &&\n    item.path.endsWith(\"/\" + config.source.fileName)\n  )\n  .map(item => ({\n    path: item.path,\n    sha: item.sha,\n    url: item.url\n  }));\n\nreturn [\n  {\n    json: {\n      ...config,\n      repositorySha: response.sha,\n      fileCount: files.length,\n      files\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        0
+      ],
+      "id": "b003b8ba-ae14-4923-a980-4546ab071594",
+      "name": "04 – Locate Object Files"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "files",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        832,
+        0
+      ],
+      "id": "01732e2b-ddc0-4685-bcf9-baf77efd6a1f",
+      "name": "05 – Split Object Files"
+    },
+    {
+      "parameters": {
+        "url": "={{$json.url}}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "840b45fd-1316-4be3-b14a-4e34fca9b26f",
+      "name": "06 – Download Object Files",
+      "credentials": {
+        "githubApi": {
+          "id": "JdkkyOWLPmMR1Rn1",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const requiredFields = [\n  \"objectId\",\n  \"objectType\",\n  \"title\",\n  \"status\"\n];\n\nconst parsed = $json.parsed ?? {};\n\nconst missingFields = requiredFields.filter((field) => {\n  const value = parsed[field];\n\n  return (\n    value === null ||\n    value === undefined ||\n    String(value).trim() === \"\"\n  );\n});\n\nreturn {\n  json: {\n    ...$json,\n\n    validation: {\n      valid: missingFields.length === 0,\n      missingFields\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1664,
+        0
+      ],
+      "id": "590b1c02-e64d-4413-8af8-5e5306620ae1",
+      "name": "09 – Validate Required Fields"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const parsed = $json.parsed ?? {};\n\nconst normalized = {\n  objectId:\n    typeof parsed.objectId === \"string\"\n      ? parsed.objectId.trim().toUpperCase()\n      : null,\n\n  objectType:\n    typeof parsed.objectType === \"string\"\n      ? parsed.objectType.trim().toLowerCase()\n      : null,\n\n  title:\n    typeof parsed.title === \"string\"\n      ? parsed.title.trim()\n      : null,\n\n  status:\n    typeof parsed.status === \"string\"\n      ? parsed.status.trim().toLowerCase()\n      : null,\n\n  description:\n    typeof parsed.description === \"string\"\n      ? parsed.description.trim()\n      : \"\",\n\n  source:\n    typeof parsed.source === \"string\" &&\n    parsed.source.trim() !== \"\"\n      ? parsed.source.trim()\n      : \"JaMoKo OS\",\n\n  priority:\n    typeof parsed.priority === \"string\" &&\n    parsed.priority.trim() !== \"\"\n      ? parsed.priority.trim().toLowerCase()\n      : \"normal\"\n};\n\nreturn {\n  json: {\n    ...$json,\n    normalized\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1872,
+        0
+      ],
+      "id": "7d94a253-345c-4021-881c-f274a7751898",
+      "name": "10 – Normalize Objects"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst validObjects = [];\nconst invalidObjects = [];\n\nfor (const item of items) {\n  const data = item.json;\n\n  if (data.validation?.valid) {\n    validObjects.push({\n      ...data.normalized,\n      meta: {\n        path: data.path ?? null,\n        sha: data.sha ?? null,\n        sourceUrl: data.url ?? null\n      }\n    });\n  } else {\n    invalidObjects.push({\n      path: data.path ?? null,\n      objectId: data.parsed?.objectId ?? null,\n      missingFields: data.validation?.missingFields ?? [],\n      reason: \"Pflichtfelder fehlen\"\n    });\n  }\n}\n\nreturn [\n  {\n    json: {\n      validObjects,\n      invalidObjects,\n      counts: {\n        total: items.length,\n        valid: validObjects.length,\n        invalid: invalidObjects.length\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        0
+      ],
+      "id": "9070f55a-114e-4f76-bf2e-64eaffc2ee31",
+      "name": "11 – Filter Valid Objects"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\nconst validObjects = Array.isArray(input.validObjects)\n  ? input.validObjects\n  : [];\n\nconst invalidObjects = Array.isArray(input.invalidObjects)\n  ? input.invalidObjects\n  : [];\n\nconst operationsObjects = validObjects.map((object) => ({\n  objectId: object.objectId,\n  objectType: object.objectType,\n  title: object.title,\n  status: object.status,\n  description: object.description,\n  source: object.source,\n  priority: object.priority,\n\n  meta: {\n    path: object.meta?.path ?? null,\n    sha: object.meta?.sha ?? null,\n    sourceUrl: object.meta?.sourceUrl ?? null,\n    loaderWorkflowId: \"WF-0008\",\n    loaderWorkflowVersion: \"0.2.0\"\n  }\n}));\n\nreturn [\n  {\n    json: {\n      workflow: {\n        id: \"WF-0008\",\n        name: \"Object Loader\",\n        version: \"0.2.0\",\n        status: \"development\"\n      },\n\n      source: {\n        system: \"GitHub\",\n        repository: \"JaMoKo_OS\",\n        branch: \"main\"\n      },\n\n      operationsObjects,\n\n      counts: {\n        totalObjects: input.counts?.total ?? 0,\n        validObjects: input.counts?.valid ?? 0,\n        invalidObjects: input.counts?.invalid ?? 0,\n        outputObjects: operationsObjects.length\n      },\n\n      invalidObjects\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2288,
+        0
+      ],
+      "id": "c4c8a620-4085-4a58-9297-94155e17ac15",
+      "name": "12 – Build Operations Output"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const markdown = String($json.markdown ?? \"\");\n\n// Zugehörigen Dateipfad aus dem Split-Node übernehmen.\nconst sourceFile = $(\"05 – Split Object Files\").item.json;\nconst path = sourceFile.path ?? null;\n\nfunction readIdentityField(label) {\n  const pattern = new RegExp(\n    `^${label}\\\\s*:\\\\s*(.+)$`,\n    \"im\"\n  );\n\n  return markdown.match(pattern)?.[1]?.trim() ?? null;\n}\n\nfunction readSection(heading) {\n  const pattern = new RegExp(\n    `^##\\\\s+${heading}\\\\s*\\\\n([\\\\s\\\\S]*?)(?=^---\\\\s*$|^##\\\\s+|$)`,\n    \"im\"\n  );\n\n  return markdown.match(pattern)?.[1]?.trim() ?? \"\";\n}\n\nconst objectId =\n  readIdentityField(\"ID\") ??\n  path?.match(/[A-Z]+-\\d{4}/i)?.[0]?.toUpperCase() ??\n  null;\n\nconst objectType =\n  readIdentityField(\"Typ\") ??\n  path?.split(\"/\")?.[1] ??\n  null;\n\nconst title =\n  readIdentityField(\"Name\") ??\n  markdown.match(/^#\\s+(.+)$/m)?.[1]?.trim() ??\n  objectId;\n\nconst status = readIdentityField(\"Status\");\n\nconst descriptionSection = readSection(\"Beschreibung\");\n\n// Nur den ersten beschreibenden Absatz verwenden.\nconst description = descriptionSection\n  .split(/\\n\\s*\\n/)\n  .map(block => block.trim())\n  .find(block =>\n    block !== \"\" &&\n    !block.endsWith(\":\")\n  ) ?? \"\";\n\nreturn {\n  json: {\n    ...$json,\n\n    path,\n\n    parsed: {\n      objectId,\n      objectType,\n      title,\n      status,\n      description,\n      source: \"JaMoKo OS\",\n      priority: \"normal\"\n    },\n\n    sections: {\n      identity: readSection(\"Identität\"),\n      description: descriptionSection,\n      relationships: readSection(\"Beziehungen\"),\n      decisions: readSection(\"Entscheidungen\"),\n      standards: readSection(\"Standards\"),\n      history: readSection(\"Historie\"),\n      attachments: readSection(\"Anhänge\")\n    },\n\n    body: markdown\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1456,
+        0
+      ],
+      "id": "3c5bb2bf-b81a-4384-a212-3f59e2049f6d",
+      "name": "08 – Parse Object Data"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const encodedContent = String($json.content ?? \"\");\n\nif (!encodedContent) {\n  throw new Error(\"GitHub-Blob enthält keinen Base64-Inhalt.\");\n}\n\nconst markdown = Buffer\n  .from(encodedContent.replace(/\\n/g, \"\"), \"base64\")\n  .toString(\"utf8\");\n\nconst sourceFile = $(\"05 – Split Object Files\").item.json;\n\nreturn {\n  json: {\n    ...$json,\n    path: sourceFile.path ?? null,\n    sourceSha: sourceFile.sha ?? null,\n    sourceUrl: sourceFile.url ?? null,\n    markdown\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1248,
+        0
+      ],
+      "id": "a18907d0-f529-4d60-a8fa-66230fa5d984",
+      "name": "07 – Decode Markdown"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\nreturn [\n  {\n    json: {\n      summary: {\n        totalObjects: input.counts.totalObjects,\n        validObjects: input.counts.validObjects,\n        invalidObjects: input.counts.invalidObjects,\n        outputObjects: input.counts.outputObjects,\n      },\n\n      repairs: input.invalidObjects.map(obj => ({\n        objectId: obj.objectId,\n        path: obj.path,\n        missing: obj.missingFields,\n      })),\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2496,
+        0
+      ],
+      "id": "2055e3a1-58ba-4f12-95bd-5cc286ab4d2e",
+      "name": "13 – Repair Report"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\nconst summary = input.summary ?? {};\nconst repairs = Array.isArray(input.repairs)\n  ? input.repairs\n  : [];\n\nconst invalidObjects = repairs.length;\n\nlet runStatus = \"success\";\n\nif (invalidObjects > 0) {\n  runStatus = \"warning\";\n}\n\nif (\n  summary.totalObjects === 0 ||\n  summary.totalObjects === undefined\n) {\n  runStatus = \"error\";\n}\n\nreturn [\n  {\n    json: {\n      workflow: {\n        id: \"WF-0008\",\n        name: \"Object Loader\",\n        version: \"0.2.0\",\n        status: \"development\"\n      },\n\n      runStatus,\n\n      summary: {\n        totalObjects: summary.totalObjects ?? 0,\n        validObjects: summary.validObjects ?? 0,\n        invalidObjects: summary.invalidObjects ?? invalidObjects,\n        outputObjects: summary.outputObjects ?? 0,\n        repairItems: repairs.length\n      },\n\n      repairRequired: repairs.length > 0,\n\n      repairs,\n\n      safety: {\n        readOnly: true,\n        filesChanged: false,\n        commitsCreated: false,\n        automaticRepair: false\n      },\n\n      nextWorkflow: repairs.length > 0\n        ? {\n            id: \"WF-0009\",\n            name: \"Object Repair Engine\",\n            action: \"review_repair_proposals\"\n          }\n        : null,\n\n      timestamp: new Date().toISOString()\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2704,
+        0
+      ],
+      "id": "33a8c64b-57f7-4bdf-8e78-8acce979b259",
+      "name": "14 – Summary"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "02-Load Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02-Load Configuration": {
+      "main": [
+        [
+          {
+            "node": "03 – Load Repository Tree",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "03 – Load Repository Tree": {
+      "main": [
+        [
+          {
+            "node": "04 – Locate Object Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "04 – Locate Object Files": {
+      "main": [
+        [
+          {
+            "node": "05 – Split Object Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "05 – Split Object Files": {
+      "main": [
+        [
+          {
+            "node": "06 – Download Object Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "06 – Download Object Files": {
+      "main": [
+        [
+          {
+            "node": "07 – Decode Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "09 – Validate Required Fields": {
+      "main": [
+        [
+          {
+            "node": "10 – Normalize Objects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10 – Normalize Objects": {
+      "main": [
+        [
+          {
+            "node": "11 – Filter Valid Objects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "11 – Filter Valid Objects": {
+      "main": [
+        [
+          {
+            "node": "12 – Build Operations Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "08 – Parse Object Data": {
+      "main": [
+        [
+          {
+            "node": "09 – Validate Required Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "07 – Decode Markdown": {
+      "main": [
+        [
+          {
+            "node": "08 – Parse Object Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "12 – Build Operations Output": {
+      "main": [
+        [
+          {
+            "node": "13 – Repair Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "13 – Repair Report": {
+      "main": [
+        [
+          {
+            "node": "14 – Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "89f238b4-b7f8-4f38-abe0-307466208316",
+  "meta": {
+    "instanceId": "e741a4e739b61d3b5adea51b11deb51bfbf0bbcb91b13a42ce4f3e10b6e83acc"
+  },
+  "nodeGroups": [],
+  "id": "P0bltCJT9TO99OZn",
+  "tags": []
+}

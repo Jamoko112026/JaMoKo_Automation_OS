@@ -1,0 +1,296 @@
+{
+  "name": "WF-0010 – Object Auditor",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "59253bba-24b1-4fc6-9014-5f3b7651082c",
+      "name": "01 – Manual Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      workflow: {\n        id: \"WF-0010\",\n        name: \"Object Auditor\",\n        version: \"0.1.0\",\n        status: \"draft\"\n      },\n\n      audit: {\n        enabledRules: [\n          \"duplicate_object_id\",\n          \"invalid_object_id\",\n          \"missing_status\",\n          \"invalid_status\",\n          \"object_missing_in_registry\",\n          \"registry_entry_without_object\",\n          \"missing_relation_target\"\n        ]\n      },\n\n      severity: {\n        info: \"info\",\n        warning: \"warning\",\n        error: \"error\"\n      },\n\n      output: {\n        includeSummary: true,\n        includeFindings: true,\n        includeTechnicalErrors: true\n      },\n\n      safety: {\n        readOnly: true,\n        allowRepositoryChanges: false,\n        allowCommits: false,\n        allowAutomaticRepair: false\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "12ed6a46-e0df-46d5-b7c1-70a91b5696b4",
+      "name": "02 – Load Audit Configuration"
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $input.first().json;\n\nconst objects = [\n  {\n    objectId: \"COMP-0001\",\n    objectType: \"company\",\n    title: \"JaMoKo\",\n    status: \"active\",\n    path: \"01_Objects/Company/COMP-0001/object.md\",\n    relationships: []\n  },\n  {\n    objectId: \"CUST-0001\",\n    objectType: \"customer\",\n    title: \"SL-Bautec\",\n    status: \"active\",\n    path: \"01_Objects/Customers/CUST-0001/object.md\",\n    relationships: []\n  },\n  {\n    objectId: \"CUST-0002\",\n    objectType: \"customer\",\n    title: \"Uli Glaser\",\n    status: null,\n    path: \"01_Objects/Customers/CUST-0002/object.md\",\n    relationships: []\n  },\n  {\n    objectId: \"PROJ-0001\",\n    objectType: \"project\",\n    title: \"JaMoKo Website\",\n    status: \"active\",\n    path: \"01_Objects/Projects/PROJ-0001/object.md\",\n    relationships: [\n      {\n        type: \"belongs_to\",\n        targetId: \"COMP-0001\"\n      }\n    ]\n  }\n];\n\nreturn [\n  {\n    json: {\n      ...config,\n\n      objects,\n\n      objectCount: objects.length,\n\n      source: {\n        workflowId: \"WF-0008\",\n        workflowName: \"Object Loader\",\n        mode: \"controlled_test_data\"\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "1e17fc98-5dea-41de-816d-c1fae7ba1c4d",
+      "name": "03 – Load Object Data."
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\nconst registryEntries = [\n  {\n    objectId: \"COMP-0001\",\n    objectType: \"company\",\n    title: \"JaMoKo\",\n    status: \"active\",\n    path: \"01_Objects/Company/COMP-0001/object.md\"\n  },\n  {\n    objectId: \"CUST-0001\",\n    objectType: \"customer\",\n    title: \"SL-Bautec\",\n    status: \"active\",\n    path: \"01_Objects/Customers/CUST-0001/object.md\"\n  },\n  {\n    objectId: \"PROJ-0001\",\n    objectType: \"project\",\n    title: \"JaMoKo Website\",\n    status: \"active\",\n    path: \"01_Objects/Projects/PROJ-0001/object.md\"\n  },\n  {\n    objectId: \"WEB-0001\",\n    objectType: \"website\",\n    title: \"JaMoKo Website\",\n    status: \"active\",\n    path: \"01_Objects/Websites/WEB-0001/object.md\"\n  }\n];\n\nconst allowedStatusValues = [\n  \"draft\",\n  \"planned\",\n  \"development\",\n  \"testing\",\n  \"active\",\n  \"waiting\",\n  \"review\",\n  \"released\",\n  \"completed\",\n  \"deprecated\",\n  \"archived\"\n];\n\nconst allowedRelationTypes = [\n  \"belongs_to\",\n  \"contains\",\n  \"depends_on\",\n  \"related_to\",\n  \"uses\",\n  \"maintained_by\"\n];\n\nreturn [\n  {\n    json: {\n      ...input,\n\n      registry: {\n        entries: registryEntries,\n        entryCount: registryEntries.length,\n        source: \"controlled_test_data\"\n      },\n\n      statusRegistry: {\n        values: allowedStatusValues,\n        valueCount: allowedStatusValues.length\n      },\n\n      relationRegistry: {\n        values: allowedRelationTypes,\n        valueCount: allowedRelationTypes.length\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        0
+      ],
+      "id": "0169cf06-a48e-4fae-86c7-64005618800d",
+      "name": "04 – Load Registry Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\nconst objects = input.objects ?? [];\nconst registryEntries = input.registry?.entries ?? [];\nconst statusValues = input.statusRegistry?.values ?? [];\nconst relationTypes = input.relationRegistry?.values ?? [];\n\nconst objectIndex = {};\nconst registryIndex = {};\n\nfor (const object of objects) {\n  objectIndex[object.objectId] = object;\n}\n\nfor (const entry of registryEntries) {\n  registryIndex[entry.objectId] = entry;\n}\n\nreturn [\n  {\n    json: {\n      ...input,\n\n      auditContext: {\n        objects,\n        registryEntries,\n        statusValues,\n        relationTypes,\n\n        objectIndex,\n        registryIndex,\n\n        statistics: {\n          objectCount: objects.length,\n          registryCount: registryEntries.length,\n          statusCount: statusValues.length,\n          relationCount: relationTypes.length\n        }\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        0
+      ],
+      "id": "8a11d18c-0968-4c7e-9340-2ba24ace9a9e",
+      "name": "05 – Build Audit Context"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst context = input.auditContext ?? {};\nconst objects = Array.isArray(context.objects)\n  ? context.objects\n  : [];\n\nconst findings = [];\nconst technicalErrors = [];\n\nconst objectIdPattern =\n  /^(COMP|CUST|PROJ|WEB|DEV|REPO|WF|INV|INC|FIN|STD|HYP|DEC)-\\d{4}$/;\n\nconst occurrences = {};\n\n// IDs sammeln\nfor (const object of objects) {\n  const objectId =\n    typeof object.objectId === \"string\"\n      ? object.objectId.trim().toUpperCase()\n      : null;\n\n  if (!objectId) {\n    findings.push({\n      objectId: null,\n      path: object.path ?? null,\n      category: \"identity\",\n      severity: \"error\",\n      rule: \"missing_object_id\",\n      message: \"Die Objektakte besitzt keine objectId.\"\n    });\n\n    continue;\n  }\n\n  if (!occurrences[objectId]) {\n    occurrences[objectId] = [];\n  }\n\n  occurrences[objectId].push(object);\n\n  // Format prüfen\n  if (!objectIdPattern.test(objectId)) {\n    findings.push({\n      objectId,\n      path: object.path ?? null,\n      category: \"identity\",\n      severity: \"error\",\n      rule: \"invalid_object_id\",\n      message: `Die Objekt-ID ${objectId} entspricht nicht dem erwarteten Format PREFIX-0000.`\n    });\n  }\n\n  // ID gegen Dateipfad prüfen\n  const pathObjectId =\n    String(object.path ?? \"\")\n      .match(/[A-Z]+-\\d{4}/i)?.[0]\n      ?.toUpperCase() ?? null;\n\n  if (pathObjectId && pathObjectId !== objectId) {\n    findings.push({\n      objectId,\n      path: object.path ?? null,\n      category: \"identity\",\n      severity: \"error\",\n      rule: \"object_id_path_mismatch\",\n      message:\n        `Die objectId ${objectId} stimmt nicht mit der ID ${pathObjectId} im Dateipfad überein.`\n    });\n  }\n}\n\n// Doppelte IDs prüfen\nfor (const [objectId, matchingObjects] of Object.entries(occurrences)) {\n  if (matchingObjects.length > 1) {\n    findings.push({\n      objectId,\n      path: null,\n      category: \"identity\",\n      severity: \"error\",\n      rule: \"duplicate_object_id\",\n      message:\n        `Die Objekt-ID ${objectId} wurde ${matchingObjects.length}-mal gefunden.`,\n      details: matchingObjects.map(object => ({\n        path: object.path ?? null,\n        title: object.title ?? null,\n        objectType: object.objectType ?? null\n      }))\n    });\n  }\n}\n\nreturn [\n  {\n    json: {\n      ...input,\n\n      identityAudit: {\n        checkedObjects: objects.length,\n        findings,\n        technicalErrors,\n        counts: {\n          findings: findings.length,\n          errors: findings.filter(\n            finding => finding.severity === \"error\"\n          ).length,\n          warnings: findings.filter(\n            finding => finding.severity === \"warning\"\n          ).length,\n          technicalErrors: technicalErrors.length\n        }\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "9ce61936-6fc1-489c-939d-06177002fc5f",
+      "name": "06 – Audit Object IDs"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\nconst context = input.auditContext ?? {};\n\nconst objects = Array.isArray(context.objects)\n  ? context.objects\n  : [];\n\nconst allowedStatusValues = Array.isArray(context.statusValues)\n  ? context.statusValues.map(value =>\n      String(value).trim().toLowerCase()\n    )\n  : [];\n\nconst findings = [];\nconst technicalErrors = [];\n\nfor (const object of objects) {\n  const objectId = object.objectId ?? null;\n  const path = object.path ?? null;\n\n  const rawStatus = object.status;\n\n  const status =\n    typeof rawStatus === \"string\"\n      ? rawStatus.trim().toLowerCase()\n      : null;\n\n  if (!status) {\n    findings.push({\n      objectId,\n      path,\n      category: \"status\",\n      severity: \"error\",\n      rule: \"missing_status\",\n      message: \"Das Pflichtfeld 'status' fehlt oder ist leer.\"\n    });\n\n    continue;\n  }\n\n  if (!allowedStatusValues.includes(status)) {\n    findings.push({\n      objectId,\n      path,\n      category: \"status\",\n      severity: \"error\",\n      rule: \"invalid_status\",\n      message:\n        `Der Status '${status}' ist nicht im Statusregister enthalten.`,\n      details: {\n        currentStatus: status,\n        allowedStatusValues\n      }\n    });\n  }\n}\n\nif (allowedStatusValues.length === 0) {\n  technicalErrors.push({\n    category: \"technical\",\n    severity: \"error\",\n    rule: \"status_registry_empty\",\n    message:\n      \"Das Statusregister enthält keine zulässigen Statuswerte.\"\n  });\n}\n\nreturn [\n  {\n    json: {\n      ...input,\n\n      statusAudit: {\n        checkedObjects: objects.length,\n        allowedStatusValues,\n        findings,\n        technicalErrors,\n\n        counts: {\n          findings: findings.length,\n\n          errors: findings.filter(\n            finding => finding.severity === \"error\"\n          ).length,\n\n          warnings: findings.filter(\n            finding => finding.severity === \"warning\"\n          ).length,\n\n          technicalErrors: technicalErrors.length\n        }\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1248,
+        0
+      ],
+      "id": "0c4c947b-cb32-4fa6-9730-77aec0e63837",
+      "name": "07 – Audit Status Values"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\nconst context = input.auditContext ?? {};\n\nconst objects = Array.isArray(context.objects)\n  ? context.objects\n  : [];\n\nconst registryEntries = Array.isArray(context.registryEntries)\n  ? context.registryEntries\n  : [];\n\nconst findings = [];\nconst technicalErrors = [];\n\nconst objectIndex = {};\nconst registryIndex = {};\n\n// Objektindex aufbauen\nfor (const object of objects) {\n  const objectId =\n    typeof object.objectId === \"string\"\n      ? object.objectId.trim().toUpperCase()\n      : null;\n\n  if (!objectId) {\n    continue;\n  }\n\n  if (!objectIndex[objectId]) {\n    objectIndex[objectId] = [];\n  }\n\n  objectIndex[objectId].push(object);\n}\n\n// Registerindex aufbauen\nfor (const entry of registryEntries) {\n  const objectId =\n    typeof entry.objectId === \"string\"\n      ? entry.objectId.trim().toUpperCase()\n      : null;\n\n  if (!objectId) {\n    technicalErrors.push({\n      category: \"technical\",\n      severity: \"error\",\n      rule: \"registry_entry_missing_object_id\",\n      message: \"Ein Registereintrag besitzt keine objectId.\",\n      details: {\n        entry\n      }\n    });\n\n    continue;\n  }\n\n  if (!registryIndex[objectId]) {\n    registryIndex[objectId] = [];\n  }\n\n  registryIndex[objectId].push(entry);\n}\n\n// Objektakte ohne Registereintrag\nfor (const [objectId, matchingObjects] of Object.entries(objectIndex)) {\n  if (!registryIndex[objectId]) {\n    for (const object of matchingObjects) {\n      findings.push({\n        objectId,\n        path: object.path ?? null,\n        category: \"registry\",\n        severity: \"warning\",\n        rule: \"object_missing_in_registry\",\n        message:\n          `Die Objektakte ${objectId} besitzt keinen Eintrag im Hauptregister.`\n      });\n    }\n  }\n}\n\n// Registereintrag ohne Objektakte\nfor (const [objectId, matchingEntries] of Object.entries(registryIndex)) {\n  if (!objectIndex[objectId]) {\n    for (const entry of matchingEntries) {\n      findings.push({\n        objectId,\n        path: entry.path ?? null,\n        category: \"registry\",\n        severity: \"error\",\n        rule: \"registry_entry_without_object\",\n        message:\n          `Der Registereintrag ${objectId} besitzt keine vorhandene Objektakte.`\n      });\n    }\n  }\n}\n\n// Doppelte Registereinträge\nfor (const [objectId, matchingEntries] of Object.entries(registryIndex)) {\n  if (matchingEntries.length > 1) {\n    findings.push({\n      objectId,\n      path: null,\n      category: \"registry\",\n      severity: \"error\",\n      rule: \"duplicate_registry_entry\",\n      message:\n        `Die Objekt-ID ${objectId} wurde ${matchingEntries.length}-mal im Hauptregister gefunden.`,\n      details: matchingEntries.map(entry => ({\n        path: entry.path ?? null,\n        title: entry.title ?? null,\n        objectType: entry.objectType ?? null\n      }))\n    });\n  }\n}\n\n// Pfadabweichungen prüfen\nfor (const objectId of Object.keys(objectIndex)) {\n  const matchingObjects = objectIndex[objectId];\n  const matchingEntries = registryIndex[objectId];\n\n  if (!matchingEntries) {\n    continue;\n  }\n\n  for (const object of matchingObjects) {\n    for (const entry of matchingEntries) {\n      const objectPath = String(object.path ?? \"\").trim();\n      const registryPath = String(entry.path ?? \"\").trim();\n\n      if (\n        objectPath &&\n        registryPath &&\n        objectPath !== registryPath\n      ) {\n        findings.push({\n          objectId,\n          path: objectPath,\n          category: \"registry\",\n          severity: \"warning\",\n          rule: \"registry_path_mismatch\",\n          message:\n            `Der Objektpfad '${objectPath}' stimmt nicht mit dem Registerpfad '${registryPath}' überein.`,\n          details: {\n            objectPath,\n            registryPath\n          }\n        });\n      }\n    }\n  }\n}\n\nreturn [\n  {\n    json: {\n      ...input,\n\n      registryAudit: {\n        checkedObjects: objects.length,\n        checkedRegistryEntries: registryEntries.length,\n\n        findings,\n        technicalErrors,\n\n        counts: {\n          findings: findings.length,\n\n          errors: findings.filter(\n            finding => finding.severity === \"error\"\n          ).length,\n\n          warnings: findings.filter(\n            finding => finding.severity === \"warning\"\n          ).length,\n\n          technicalErrors: technicalErrors.length\n        }\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1456,
+        0
+      ],
+      "id": "cead7a58-7322-4de6-93fe-7606fdd05860",
+      "name": "08 – Audit Registry Consistency"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\nconst context = input.auditContext ?? {};\n\nconst objects = Array.isArray(context.objects)\n  ? context.objects\n  : [];\n\nconst relationTypes = Array.isArray(context.relationTypes)\n  ? context.relationTypes.map(value =>\n      String(value).trim().toLowerCase()\n    )\n  : [];\n\nconst objectIndex = context.objectIndex ?? {};\n\nconst findings = [];\nconst technicalErrors = [];\n\nfor (const object of objects) {\n  const relationships = Array.isArray(object.relationships)\n    ? object.relationships\n    : [];\n\n  for (const relationship of relationships) {\n    const relationType =\n      typeof relationship.type === \"string\"\n        ? relationship.type.trim().toLowerCase()\n        : null;\n\n    const targetId =\n      typeof relationship.targetId === \"string\"\n        ? relationship.targetId.trim().toUpperCase()\n        : null;\n\n    if (!targetId) {\n      findings.push({\n        objectId: object.objectId ?? null,\n        path: object.path ?? null,\n        category: \"relationship\",\n        severity: \"error\",\n        rule: \"missing_relation_target_id\",\n        message:\n          \"Eine Beziehung besitzt keine Ziel-ID.\",\n        details: {\n          relationship\n        }\n      });\n\n      continue;\n    }\n\n    if (!objectIndex[targetId]) {\n      findings.push({\n        objectId: object.objectId ?? null,\n        path: object.path ?? null,\n        category: \"relationship\",\n        severity: \"error\",\n        rule: \"missing_relation_target\",\n        message:\n          `Das referenzierte Zielobjekt ${targetId} wurde nicht gefunden.`,\n        details: {\n          relationType,\n          targetId\n        }\n      });\n    }\n\n    if (!relationType) {\n      findings.push({\n        objectId: object.objectId ?? null,\n        path: object.path ?? null,\n        category: \"relationship\",\n        severity: \"warning\",\n        rule: \"missing_relation_type\",\n        message:\n          `Die Beziehung zum Zielobjekt ${targetId} besitzt keinen Beziehungstyp.`,\n        details: {\n          targetId\n        }\n      });\n\n      continue;\n    }\n\n    if (\n      relationTypes.length > 0 &&\n      !relationTypes.includes(relationType)\n    ) {\n      findings.push({\n        objectId: object.objectId ?? null,\n        path: object.path ?? null,\n        category: \"relationship\",\n        severity: \"warning\",\n        rule: \"invalid_relation_type\",\n        message:\n          `Der Beziehungstyp '${relationType}' ist nicht im Beziehungsregister enthalten.`,\n        details: {\n          relationType,\n          targetId,\n          allowedRelationTypes: relationTypes\n        }\n      });\n    }\n  }\n}\n\nif (relationTypes.length === 0) {\n  technicalErrors.push({\n    category: \"technical\",\n    severity: \"warning\",\n    rule: \"relation_registry_empty\",\n    message:\n      \"Das Beziehungsregister enthält keine zulässigen Beziehungstypen.\"\n  });\n}\n\nreturn [\n  {\n    json: {\n      ...input,\n\n      relationshipAudit: {\n        checkedObjects: objects.length,\n        checkedRelationships: objects.reduce(\n          (sum, object) =>\n            sum +\n            (\n              Array.isArray(object.relationships)\n                ? object.relationships.length\n                : 0\n            ),\n          0\n        ),\n\n        findings,\n        technicalErrors,\n\n        counts: {\n          findings: findings.length,\n\n          errors: findings.filter(\n            finding => finding.severity === \"error\"\n          ).length,\n\n          warnings: findings.filter(\n            finding => finding.severity === \"warning\"\n          ).length,\n\n          technicalErrors: technicalErrors.length\n        }\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1664,
+        0
+      ],
+      "id": "af691795-dac4-48f1-ae06-72f9f8bcf55b",
+      "name": "09 – Audit Relationships"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\nconst identityAudit = input.identityAudit ?? {};\nconst statusAudit = input.statusAudit ?? {};\nconst registryAudit = input.registryAudit ?? {};\nconst relationshipAudit = input.relationshipAudit ?? {};\n\nconst findings = [\n  ...(Array.isArray(identityAudit.findings)\n    ? identityAudit.findings\n    : []),\n\n  ...(Array.isArray(statusAudit.findings)\n    ? statusAudit.findings\n    : []),\n\n  ...(Array.isArray(registryAudit.findings)\n    ? registryAudit.findings\n    : []),\n\n  ...(Array.isArray(relationshipAudit.findings)\n    ? relationshipAudit.findings\n    : [])\n];\n\nconst technicalErrors = [\n  ...(Array.isArray(identityAudit.technicalErrors)\n    ? identityAudit.technicalErrors\n    : []),\n\n  ...(Array.isArray(statusAudit.technicalErrors)\n    ? statusAudit.technicalErrors\n    : []),\n\n  ...(Array.isArray(registryAudit.technicalErrors)\n    ? registryAudit.technicalErrors\n    : []),\n\n  ...(Array.isArray(relationshipAudit.technicalErrors)\n    ? relationshipAudit.technicalErrors\n    : [])\n];\n\nconst groupedFindings = {\n  info: findings.filter(\n    finding => finding.severity === \"info\"\n  ),\n\n  warnings: findings.filter(\n    finding => finding.severity === \"warning\"\n  ),\n\n  errors: findings.filter(\n    finding => finding.severity === \"error\"\n  )\n};\n\nconst affectedObjectIds = [\n  ...new Set(\n    findings\n      .map(finding => finding.objectId)\n      .filter(Boolean)\n  )\n];\n\nreturn [\n  {\n    json: {\n      ...input,\n\n      auditFindings: {\n        all: findings,\n\n        grouped: groupedFindings,\n\n        technicalErrors,\n\n        affectedObjectIds,\n\n        counts: {\n          total: findings.length,\n          info: groupedFindings.info.length,\n          warnings: groupedFindings.warnings.length,\n          errors: groupedFindings.errors.length,\n          technicalErrors: technicalErrors.length,\n          affectedObjects: affectedObjectIds.length\n        }\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1872,
+        0
+      ],
+      "id": "c58171b8-e064-4b43-aaf7-64d9e5551fca",
+      "name": "10 – Merge Audit Findings"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\nconst findings = input.auditFindings ?? {};\nconst counts = findings.counts ?? {\n  total: 0,\n  info: 0,\n  warnings: 0,\n  errors: 0,\n  technicalErrors: 0,\n  affectedObjects: 0\n};\n\nlet auditStatus = \"passed\";\n\nif (counts.errors > 0 || counts.technicalErrors > 0) {\n  auditStatus = \"failed\";\n} else if (counts.warnings > 0) {\n  auditStatus = \"warning\";\n}\n\nconst healthScoreBase = 100;\n\nconst errorPenalty = counts.errors * 15;\nconst warningPenalty = counts.warnings * 5;\nconst technicalPenalty = counts.technicalErrors * 20;\n\nconst healthScore = Math.max(\n  0,\n  healthScoreBase -\n    errorPenalty -\n    warningPenalty -\n    technicalPenalty\n);\n\nreturn [\n  {\n    json: {\n      ...input,\n\n      auditResult: {\n        status: auditStatus,\n\n        healthScore,\n\n        counts: {\n          totalFindings: counts.total,\n          info: counts.info,\n          warnings: counts.warnings,\n          errors: counts.errors,\n          technicalErrors: counts.technicalErrors,\n          affectedObjects: counts.affectedObjects\n        },\n\n        rules: {\n          passed:\n            counts.errors === 0 &&\n            counts.warnings === 0 &&\n            counts.technicalErrors === 0,\n\n          warning:\n            counts.errors === 0 &&\n            counts.technicalErrors === 0 &&\n            counts.warnings > 0,\n\n          failed:\n            counts.errors > 0 ||\n            counts.technicalErrors > 0\n        }\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        0
+      ],
+      "id": "47aaa57d-78cf-43da-aa19-336f513e1b99",
+      "name": "11 – Calculate Audit Status"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\nconst workflow = input.workflow ?? {\n  id: \"WF-0010\",\n  name: \"Object Auditor\",\n  version: \"0.1.0\",\n  status: \"draft\"\n};\n\nconst auditResult = input.auditResult ?? {\n  status: \"failed\",\n  healthScore: 0,\n  counts: {\n    totalFindings: 0,\n    info: 0,\n    warnings: 0,\n    errors: 0,\n    technicalErrors: 1,\n    affectedObjects: 0\n  }\n};\n\nconst auditContext = input.auditContext ?? {};\nconst auditFindings = input.auditFindings ?? {};\n\nconst objects = Array.isArray(auditContext.objects)\n  ? auditContext.objects\n  : [];\n\nconst registryEntries = Array.isArray(auditContext.registryEntries)\n  ? auditContext.registryEntries\n  : [];\n\nconst findings = Array.isArray(auditFindings.all)\n  ? auditFindings.all\n  : [];\n\nconst technicalErrors = Array.isArray(auditFindings.technicalErrors)\n  ? auditFindings.technicalErrors\n  : [];\n\nreturn [\n  {\n    json: {\n      workflow: {\n        id: workflow.id,\n        name: workflow.name,\n        version: workflow.version,\n        status: workflow.status\n      },\n\n      auditStatus: auditResult.status,\n      healthScore: auditResult.healthScore,\n\n      summary: {\n        checkedObjects: objects.length,\n        checkedRegistryEntries: registryEntries.length,\n        totalFindings: auditResult.counts?.totalFindings ?? findings.length,\n        info: auditResult.counts?.info ?? 0,\n        warnings: auditResult.counts?.warnings ?? 0,\n        errors: auditResult.counts?.errors ?? 0,\n        technicalErrors:\n          auditResult.counts?.technicalErrors ??\n          technicalErrors.length,\n        affectedObjects:\n          auditResult.counts?.affectedObjects ?? 0\n      },\n\n      findings,\n\n      groupedFindings: {\n        info: auditFindings.grouped?.info ?? [],\n        warnings: auditFindings.grouped?.warnings ?? [],\n        errors: auditFindings.grouped?.errors ?? []\n      },\n\n      technicalErrors,\n\n      affectedObjectIds:\n        auditFindings.affectedObjectIds ?? [],\n\n      safety: {\n        readOnly: true,\n        filesChanged: false,\n        registriesChanged: false,\n        commitsCreated: false,\n        automaticRepair: false,\n        reviewRequired:\n          auditResult.status !== \"passed\"\n      },\n\n      source: {\n        objectData:\n          input.source?.workflowId ??\n          \"WF-0008\",\n        registryMode:\n          input.registry?.source ??\n          \"controlled_test_data\"\n      },\n\n      timestamp: new Date().toISOString()\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2288,
+        0
+      ],
+      "id": "9ed83820-7fc5-4d64-b964-3c8454dba1f6",
+      "name": "12 – Audit Summary"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "01 – Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "02 – Load Audit Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02 – Load Audit Configuration": {
+      "main": [
+        [
+          {
+            "node": "03 – Load Object Data.",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "03 – Load Object Data.": {
+      "main": [
+        [
+          {
+            "node": "04 – Load Registry Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "04 – Load Registry Data": {
+      "main": [
+        [
+          {
+            "node": "05 – Build Audit Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "05 – Build Audit Context": {
+      "main": [
+        [
+          {
+            "node": "06 – Audit Object IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "06 – Audit Object IDs": {
+      "main": [
+        [
+          {
+            "node": "07 – Audit Status Values",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "07 – Audit Status Values": {
+      "main": [
+        [
+          {
+            "node": "08 – Audit Registry Consistency",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "08 – Audit Registry Consistency": {
+      "main": [
+        [
+          {
+            "node": "09 – Audit Relationships",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "09 – Audit Relationships": {
+      "main": [
+        [
+          {
+            "node": "10 – Merge Audit Findings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10 – Merge Audit Findings": {
+      "main": [
+        [
+          {
+            "node": "11 – Calculate Audit Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "11 – Calculate Audit Status": {
+      "main": [
+        [
+          {
+            "node": "12 – Audit Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "a036eee3-7e68-42ea-8f38-eb28b1f04068",
+  "meta": {
+    "instanceId": "e741a4e739b61d3b5adea51b11deb51bfbf0bbcb91b13a42ce4f3e10b6e83acc"
+  },
+  "nodeGroups": [],
+  "id": "4S9i7nqvbnEzmE8V",
+  "tags": []
+}
