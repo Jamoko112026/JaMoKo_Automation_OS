@@ -1,0 +1,79 @@
+{
+  "name": "WF-0011 – GitHub Writer",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "91715bdc-4ebc-4f5b-a326-0c2f44746fad",
+      "name": "01 – Manual Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      objectId: \"FIN-0001\",\n      path: \"01_Objects/Finance/FIN-0001/object.md\",\n      field: \"status\",\n      currentValue: null,\n      approvedValue: \"active\",\n      approvalStatus: \"approved\",\n      sourceSha: \"abc123\",\n      approvedBy: \"manual_review\",\n      auditStatus: \"passed\",\n      mode: \"simulation\"\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "aa564f3d-6934-4f56-87dd-8991c2f4031d",
+      "name": "02 – Test Input"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputItems = $input.all();\n\nconst reject = (errorCode, message) => [\n  {\n    json: {\n      workflowId: \"WF-0011\",\n      version: \"0.1.0\",\n      mode: \"simulation\",\n      status: \"rejected\",\n      errorCode,\n      message,\n      fileChanged: false,\n      commitCreated: false,\n      pushExecuted: false\n    }\n  }\n];\n\nif (inputItems.length !== 1) {\n  return reject(\n    \"INVALID_INPUT_COUNT\",\n    \"Es muss genau ein Änderungsvorschlag vorliegen.\"\n  );\n}\n\nconst data = inputItems[0].json;\n\nif (\n  !(\"sourceSha\" in data) ||\n  typeof data.sourceSha !== \"string\" ||\n  data.sourceSha.trim() === \"\"\n) {\n  return reject(\n    \"SOURCE_SHA_MISSING\",\n    \"Der dokumentierte Ausgangs-SHA fehlt.\"\n  );\n}\n\nconst requiredFields = [\n  \"objectId\",\n  \"path\",\n  \"field\",\n  \"currentValue\",\n  \"approvedValue\",\n  \"approvalStatus\",\n  \"sourceSha\",\n  \"approvedBy\",\n  \"auditStatus\",\n  \"mode\"\n];\n\nfor (const fieldName of requiredFields) {\n  if (!(fieldName in data)) {\n    return reject(\n      \"MISSING_REQUIRED_FIELD\",\n      `Das Pflichtfeld \"${fieldName}\" fehlt.`\n    );\n  }\n\n  if (\n    fieldName !== \"currentValue\" &&\n    (\n      data[fieldName] === null ||\n      data[fieldName] === undefined ||\n      String(data[fieldName]).trim() === \"\"\n    )\n  ) {\n    return reject(\n      \"MISSING_REQUIRED_FIELD\",\n      `Das Pflichtfeld \"${fieldName}\" enthält keinen zulässigen Wert.`\n    );\n  }\n}\n\nif (data.approvalStatus !== \"approved\") {\n  return reject(\n    \"APPROVAL_REQUIRED\",\n    \"Der Änderungsvorschlag ist nicht freigegeben.\"\n  );\n}\n\nif (data.auditStatus !== \"passed\") {\n  return reject(\n    \"AUDIT_NOT_PASSED\",\n    \"Der Audit wurde nicht bestanden.\"\n  );\n}\n\nif (data.mode !== \"simulation\") {\n  return reject(\n    \"INVALID_MODE\",\n    \"WF-0011 v0.1.0 darf ausschließlich im Modus simulation ausgeführt werden.\"\n  );\n}\n\nconst objectIdPattern = /^[A-Z][A-Z0-9]*-\\d{4}$/;\n\nif (!objectIdPattern.test(data.objectId)) {\n  return reject(\n    \"INVALID_OBJECT_ID\",\n    \"Die Objekt-ID entspricht nicht dem JaMoKo-ID-Schema.\"\n  );\n}\n\nconst pathIsSafe =\n  typeof data.path === \"string\" &&\n  data.path.endsWith(\".md\") &&\n  !data.path.startsWith(\"/\") &&\n  !data.path.startsWith(\"~\") &&\n  !data.path.includes(\"..\") &&\n  !data.path.includes(\"\\\\\") &&\n  !data.path.includes(\"://\") &&\n  !data.path.includes(\"\\0\");\n\nif (!pathIsSafe) {\n  return reject(\n    \"INVALID_PATH\",\n    \"Der Zielpfad ist ungültig oder unsicher.\"\n  );\n}\n\nconst allowedFields = [\n  \"status\",\n  \"name\",\n  \"description\",\n  \"version\"\n];\n\nif (!allowedFields.includes(data.field)) {\n  return reject(\n    \"INVALID_FIELD\",\n    \"Das Zielfeld ist ungültig oder nicht zugelassen.\"\n  );\n}\n\n\nconst changePlan = {\n  operation: \"replace_field_value\",\n  objectId: data.objectId,\n  path: data.path,\n  field: data.field,\n  from: data.currentValue,\n  to: data.approvedValue,\n  sourceSha: data.sourceSha\n};\n\nconst patchPreview = {\n  format: \"structured_preview\",\n  target: data.path,\n  field: data.field,\n  before: data.currentValue,\n  after: data.approvedValue,\n  applied: false\n};\n\nconst patchValid =\n  changePlan.objectId === data.objectId &&\n  changePlan.path === data.path &&\n  changePlan.field === data.field &&\n  changePlan.to === data.approvedValue &&\n  patchPreview.applied === false;\n\nif (!patchValid) {\n  return reject(\n    \"PATCH_VALIDATION_FAILED\",\n    \"Die simulierte Änderung erfüllt die Sicherheitsbedingungen nicht.\"\n  );\n}\n\nreturn [\n  {\n    json: {\n      workflowId: \"WF-0011\",\n      version: \"0.1.0\",\n      mode: \"simulation\",\n      status: \"simulated\",\n      objectId: data.objectId,\n      path: data.path,\n      field: data.field,\n      currentValue: data.currentValue,\n      approvedValue: data.approvedValue,\n      sourceSha: data.sourceSha,\n      approvedBy: data.approvedBy,\n      auditStatus: data.auditStatus,\n      changePlan,\n      patchPreview,\n      patchValid: true,\n      fileChanged: false,\n      commitCreated: false,\n      pushExecuted: false\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "5f305008-083b-4d14-aed3-f8d38215cece",
+      "name": "03 – Validate and Simulate"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "01 – Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "02 – Test Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02 – Test Input": {
+      "main": [
+        [
+          {
+            "node": "03 – Validate and Simulate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "42eb3b9a-53f5-4500-b284-3a6998108833",
+  "meta": {
+    "instanceId": "e741a4e739b61d3b5adea51b11deb51bfbf0bbcb91b13a42ce4f3e10b6e83acc"
+  },
+  "nodeGroups": [],
+  "id": "ITnf4ezqCMYBCuT9",
+  "tags": []
+}

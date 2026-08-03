@@ -32,6 +32,7 @@ Die Vergabe neuer Workflow-IDs erfolgt ausschließlich über `id_registry.md`.
 | WF-0008 | Object Loader | Loader | released | v0.2.0 | `02_WORKFLOWS/WF-0008_Object_Loader/README.md` |
 | WF-0009 | Object Repair Engine | Processor | released | v0.1.0 | `02_WORKFLOWS/WF-0009_Object_Repair_Engine/README.md` |
 | WF-0010 | Object Auditor | Validator | released | v0.1.0 | `02_WORKFLOWS/WF-0010_Object_Auditor/README.md` |
+| WF-0011 | GitHub Writer | Writer | released | v0.1.0 | `02_WORKFLOWS/WF-0011_GitHub_Writer/README.md` |
 
 ---
 
@@ -40,7 +41,6 @@ Die Vergabe neuer Workflow-IDs erfolgt ausschließlich über `id_registry.md`.
 | ID | Geplanter Workflow | Status |
 |----|--------------------|--------|
 | WF-0007 | Project Sync | reserved |
-| WF-0011 | GitHub Writer | reserved |
 
 ---
 
@@ -57,6 +57,7 @@ Die Vergabe neuer Workflow-IDs erfolgt ausschließlich über `id_registry.md`.
 | WF-0008 | GitHub API, n8n |
 | WF-0009 | WF-0008, GitHub API, n8n |
 | WF-0010 | WF-0008, WF-0009, n8n |
+| WF-0011 | WF-0010, n8n |
 
 ---
 
@@ -94,15 +95,19 @@ Status:
 
 # Aktiver Entwicklungsblock
 
-## Repository Automation
+## Repository Automation v0.1.0
 
-Geplant:
+Enthalten:
 
 - WF-0011 – GitHub Writer
 
 Status:
 
-`planning`
+`released`
+
+Hinweis:
+
+Version 0.1.0 ist eine deaktivierte Simulation ohne schreibenden Zugriff auf GitHub.
 
 ---
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-draft
+released
 
 ## Version
 
@@ -241,6 +241,6 @@ Der n8n-Workflow wurde noch nicht aufgebaut. Die 17 definierten Testfälle wurde
 
 ## Nächster Schritt
 
-WF-0011 v0.1.0 wird in n8n anhand von `FLOW.md` aufgebaut.
+WF-0011 v0.1.0 wurde in n8n anhand von `FLOW.md` aufgebaut, vollständig getestet und als deaktivierte Simulation veröffentlicht.
 
 Anschließend werden die Testfälle aus `TESTS.md` ausgeführt und im Testprotokoll dokumentiert.

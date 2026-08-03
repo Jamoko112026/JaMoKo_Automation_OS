@@ -8,7 +8,7 @@ Alle wesentlichen Änderungen am Workflow GitHub Writer werden in diesem Dokumen
 
 ### Status
 
-draft
+released
 
 ### Hinzugefügt
 
@@ -44,13 +44,14 @@ Folgende Dokumente wurden für Version 0.1.0 erstellt:
 - `CHANGELOG.md`
 - `KNOWN_ISSUES.md`
 
-### Noch nicht umgesetzt
+### Abschlussstand
 
-- Aufbau des Workflows in n8n.
-- Ausführung der 17 Testfälle.
-- Dokumentation der Testergebnisse.
-- Export des n8n-Workflows.
-- Visuelle Dokumentation durch Screenshots.
+- n8n-Workflow vollständig aufgebaut.
+- Alle 17 Testfälle bestanden.
+- Testergebnisse dokumentiert.
+- Workflow-Export geprüft und archiviert.
+- Gesamtansicht und Referenzlauf als Screenshots archiviert.
+- Version 0.1.0 bleibt eine reine, deaktivierte Simulation.
 
 ### Sicherheitsentscheidung
 

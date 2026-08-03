@@ -6,7 +6,7 @@
 
 ## Status
 
-draft
+released
 
 ---
 
@@ -548,23 +548,23 @@ Die Ergebnisse werden nach dem Aufbau des Workflows in dieser Tabelle dokumentie
 
 | Test-ID | Datum | Ergebnis | Tatsächlicher Status | Tatsächlicher Fehlercode | Bemerkung |
 |---|---|---|---|---|---|
-| T-001 | – | offen | – | – | – |
-| T-002 | – | offen | – | – | – |
-| T-003 | – | offen | – | – | – |
-| T-004 | – | offen | – | – | – |
-| T-005 | – | offen | – | – | – |
-| T-006 | – | offen | – | – | – |
-| T-007 | – | offen | – | – | – |
-| T-008 | – | offen | – | – | – |
-| T-009 | – | offen | – | – | – |
-| T-010 | – | offen | – | – | – |
-| T-011 | – | offen | – | – | – |
-| T-012 | – | offen | – | – | – |
-| T-013 | – | offen | – | – | – |
-| T-014 | – | offen | – | – | – |
-| T-015 | – | offen | – | – | – |
-| T-016 | – | offen | – | – | – |
-| T-017 | – | offen | – | – | – |
+| T-001 | 2026-08-03 | bestanden | simulated | – | Referenzlauf erfolgreich |
+| T-002 | 2026-08-03 | bestanden | rejected | MISSING_REQUIRED_FIELD | approvedValue entfernt |
+| T-003 | 2026-08-03 | bestanden | rejected | INVALID_INPUT_COUNT | Zwei Eingaben kontrolliert abgelehnt |
+| T-004 | 2026-08-03 | bestanden | rejected | APPROVAL_REQUIRED | Fehlende Freigabe erkannt |
+| T-005 | 2026-08-03 | bestanden | rejected | MISSING_REQUIRED_FIELD | Freigabeinstanz fehlte |
+| T-006 | 2026-08-03 | bestanden | rejected | AUDIT_NOT_PASSED | Nicht bestandener Audit erkannt |
+| T-007 | 2026-08-03 | bestanden | rejected | INVALID_MODE | Unzulässiger Betriebsmodus abgelehnt |
+| T-008 | 2026-08-03 | bestanden | rejected | INVALID_OBJECT_ID | Ungültige Objekt-ID abgelehnt |
+| T-009 | 2026-08-03 | bestanden | rejected | INVALID_PATH | Absoluter Zielpfad abgelehnt |
+| T-010 | 2026-08-03 | bestanden | rejected | INVALID_PATH | Unsicherer relativer Pfad abgelehnt |
+| T-011 | 2026-08-03 | bestanden | rejected | INVALID_PATH | Geschützter Git-Pfad abgelehnt |
+| T-012 | 2026-08-03 | bestanden | rejected | INVALID_PATH | Ungültiger Zielpfad abgelehnt |
+| T-013 | 2026-08-03 | bestanden | rejected | INVALID_FIELD | Nicht zugelassenes Zielfeld abgelehnt |
+| T-014 | 2026-08-03 | bestanden | rejected | SOURCE_SHA_MISSING | Spezifische SHA-Prüfung erfolgreich |
+| T-015 | 2026-08-03 | bestanden | rejected | PATCH_VALIDATION_FAILED | Patch mit applied=true abgelehnt |
+| T-016 | 2026-08-03 | bestanden | simulated | – | currentValue null korrekt verarbeitet |
+| T-017 | 2026-08-03 | bestanden | simulated/rejected | – | Sämtliche Schreibschutzwerte blieben false |
 
 ---
 

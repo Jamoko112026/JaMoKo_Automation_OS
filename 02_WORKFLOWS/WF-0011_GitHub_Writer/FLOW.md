@@ -6,7 +6,7 @@
 
 ## Status
 
-draft
+released
 
 ---
 
@@ -739,6 +739,6 @@ Nicht Bestandteil dieses Flows sind:
 
 ## Nächster Umsetzungsschritt
 
-Nach Freigabe dieses Flow-Dokuments wird WF-0011 v0.1.0 in n8n aufgebaut.
+WF-0011 v0.1.0 wurde in n8n aufgebaut, vollständig getestet und als deaktivierte Simulation veröffentlicht.
 
 Die Nodes werden zunächst mit festen Testdaten eingerichtet. Anschließend werden Erfolgs-, Ablehnungs- und Sicherheitsfälle anhand von `TESTS.md` geprüft.

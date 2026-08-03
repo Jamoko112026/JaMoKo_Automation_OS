@@ -6,7 +6,7 @@
 
 ## Status
 
-draft
+released
 
 ---
 
