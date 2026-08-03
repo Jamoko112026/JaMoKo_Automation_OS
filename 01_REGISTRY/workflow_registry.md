@@ -2,11 +2,13 @@
 
 Dieses Register verwaltet alle Workflows des JaMoKo Automation OS.
 
-Die Vergabe neuer Workflow-IDs erfolgt über `id_registry.md`.
+Es dokumentiert den aktuellen Entwicklungsstand, die Versionierung, die technischen Abhängigkeiten sowie die Einordnung in Release- und Entwicklungsblöcke.
+
+Die Vergabe neuer Workflow-IDs erfolgt ausschließlich über `id_registry.md`.
 
 ---
 
-## Statuswerte
+# Statuswerte
 
 - `draft`
 - `development`
@@ -17,23 +19,23 @@ Die Vergabe neuer Workflow-IDs erfolgt über `id_registry.md`.
 
 ---
 
-## Workflows
+# Registrierte Workflows
 
 | ID | Name | Typ | Status | Version | Workflow-Akte |
-|----|------|-----|--------|---------|----------------|
+|----|------|-----|----------|---------|----------------|
 | WF-0001 | Task Intake | Task | released | v1.0.0 | `02_WORKFLOWS/WF-0001_Task_Intake/README.md` |
 | WF-0002 | Trello Board Setup | Setup | released | v1.0.0 | `02_WORKFLOWS/WF-0002_Trello_Board_Setup/README.md` |
 | WF-0003 | Dashboard Initial Cards | Setup | released | v1.0.0 | `02_WORKFLOWS/WF-0003_Dashboard_Initial_Cards/README.md` |
 | WF-0004 | Dashboard Sync | Synchronization | released | v1.0.0 | `02_WORKFLOWS/WF-0004_Dashboard_Sync/README.md` |
 | WF-0005 | Dashboard Maintenance | Audit | released | v1.0.0 | `02_WORKFLOWS/WF-0005_Dashboard_Maintenance/README.md` |
 | WF-0006 | Operations Synchronizer | Synchronization | released | v1.0.0 | `02_WORKFLOWS/WF-0006_Operations_Synchronizer/README.md` |
-| WF-0008 | Object Loader | Loader | development | v0.2.0 | `02_WORKFLOWS/WF-0008_Object_Loader/README.md` |
+| WF-0008 | Object Loader | Loader | released | v0.2.0 | `02_WORKFLOWS/WF-0008_Object_Loader/README.md` |
 | WF-0009 | Object Repair Engine | Processor | released | v0.1.0 | `02_WORKFLOWS/WF-0009_Object_Repair_Engine/README.md` |
-| WF-0010 | Object Auditor | Validator | draft | v0.1.0 | `02_WORKFLOWS/WF-0010_Object_Auditor/README.md` |
+| WF-0010 | Object Auditor | Validator | released | v0.1.0 | `02_WORKFLOWS/WF-0010_Object_Auditor/README.md` |
 
 ---
 
-## Reservierte IDs
+# Reservierte Workflow-IDs
 
 | ID | Geplanter Workflow | Status |
 |----|--------------------|--------|
@@ -42,7 +44,7 @@ Die Vergabe neuer Workflow-IDs erfolgt über `id_registry.md`.
 
 ---
 
-## Abhängigkeiten
+# Technische Abhängigkeiten
 
 | Workflow | Abhängigkeiten |
 |----------|----------------|
@@ -58,9 +60,9 @@ Die Vergabe neuer Workflow-IDs erfolgt über `id_registry.md`.
 
 ---
 
-## Aktueller Release-Block
+# Release-Blöcke
 
-### Dashboard Automation v1.0.0
+## Dashboard Automation v1.0.0
 
 Enthalten:
 
@@ -76,23 +78,43 @@ Status:
 
 ---
 
-## Aktueller Entwicklungsblock
-
-### Object Quality Pipeline
+## Object Quality Pipeline v1.0
 
 Enthalten:
 
 - WF-0008 – Object Loader
 - WF-0009 – Object Repair Engine
 - WF-0010 – Object Auditor
+
+Status:
+
+`released`
+
+---
+
+# Aktiver Entwicklungsblock
+
+## Repository Automation
+
+Geplant:
+
 - WF-0011 – GitHub Writer
 
 Status:
 
-`development`
+`planning`
 
 ---
 
-## Letzte Aktualisierung
+# Hinweise
+
+- Jeder Workflow besitzt eine vollständige Workflow-Akte unter `02_WORKFLOWS/`.
+- Veröffentlichte Versionen werden zusätzlich als Git-Tag versioniert.
+- Änderungen an Workflow-IDs erfolgen ausschließlich über das `id_registry.md`.
+- Architekturentscheidungen werden über die entsprechenden DEC-Dokumente dokumentiert.
+
+---
+
+# Letzte Aktualisierung
 
 2026-08-02

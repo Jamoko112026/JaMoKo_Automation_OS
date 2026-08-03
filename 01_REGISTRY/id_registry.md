@@ -1,8 +1,8 @@
 # ID Registry
 
-Dieses Register verwaltet alle vergebenen Workflow-IDs im JaMoKo Automation OS.
+Dieses Register verwaltet alle vergebenen Workflow-IDs des JaMoKo Automation OS.
 
-Die Vergabe erfolgt fortlaufend. Bereits vergebene IDs werden niemals erneut verwendet.
+Workflow-IDs werden fortlaufend vergeben und sind dauerhaft eindeutig. Eine einmal vergebene ID wird niemals erneut verwendet.
 
 ---
 
@@ -16,9 +16,9 @@ Die Vergabe erfolgt fortlaufend. Bereits vergebene IDs werden niemals erneut ver
 | WF-0004 | Workflow | Dashboard Sync | released |
 | WF-0005 | Workflow | Dashboard Maintenance | released |
 | WF-0006 | Workflow | Operations Synchronizer | released |
-| WF-0008 | Workflow | Object Loader | development |
+| WF-0008 | Workflow | Object Loader | released |
 | WF-0009 | Workflow | Object Repair Engine | released |
-| WF-0010 | Workflow | Object Auditor | draft |
+| WF-0010 | Workflow | Object Auditor | released |
 
 ---
 
@@ -39,13 +39,24 @@ WF-0012
 
 ---
 
-## Regeln
+## Vergaberegeln
 
 - Jede Workflow-ID wird genau einmal vergeben.
 - Vergebene IDs werden niemals erneut verwendet.
-- Reservierte IDs dürfen nur durch eine dokumentierte Entscheidung geändert werden.
-- Neue Workflows werden gleichzeitig im `workflow_registry.md` und im `id_registry.md` eingetragen.
-- Jeder veröffentlichte Workflow erhält eine Workflow-Akte unter `02_WORKFLOWS/`.
+- Reservierte IDs dürfen ausschließlich durch eine dokumentierte Entscheidung geändert oder freigegeben werden.
+- Jeder neue Workflow wird gleichzeitig im `id_registry.md` und im `workflow_registry.md` eingetragen.
+- Jeder veröffentlichte Workflow erhält eine vollständige Workflow-Akte unter `02_WORKFLOWS/`.
+- Veröffentlichte Workflow-Versionen werden zusätzlich über Git-Tags versioniert.
+
+---
+
+## Versionierte Releases
+
+| Workflow | Aktuelle Version |
+|----------|------------------|
+| WF-0008 – Object Loader | v0.2.0 |
+| WF-0009 – Object Repair Engine | v0.1.0 |
+| WF-0010 – Object Auditor | v0.1.0 |
 
 ---
 
