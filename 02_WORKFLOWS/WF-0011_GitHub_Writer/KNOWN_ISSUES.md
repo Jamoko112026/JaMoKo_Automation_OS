@@ -110,37 +110,6 @@ Eine freigegebene Änderung kann nicht automatisch in das Repository übernommen
 
 Beabsichtigte Sicherheitsbeschränkung.
 
----
-
-## KI-007 – Testfälle noch nicht ausgeführt
-
-### Beschreibung
-
-Die 17 Testfälle aus `TESTS.md` sind definiert, aber noch nicht in n8n ausgeführt.
-
-### Auswirkung
-
-Die fachliche Dokumentation ist vollständig, die technische Funktionsfähigkeit jedoch noch nicht nachgewiesen.
-
-### Bewertung
-
-Offen bis zum Aufbau des n8n-Workflows.
-
----
-
-## KI-008 – Export und Screenshots fehlen
-
-### Beschreibung
-
-In den Ordnern `exports/` und `screenshots/` liegen noch keine Nachweise.
-
-### Auswirkung
-
-Der Workflow kann derzeit weder importiert noch visuell überprüft werden.
-
-### Bewertung
-
-Wird nach Aufbau und Test in n8n ergänzt.
 
 ---
 
@@ -166,6 +135,8 @@ Vor der Entwicklung einer schreibenden Version müssen mindestens folgende Punkt
 
 Es sind keine unbeabsichtigten Schreibwirkungen bekannt.
 
+Der Simulationsworkflow wurde in n8n aufgebaut und alle 17 definierten Testfälle wurden am 03.08.2026 erfolgreich ausgeführt.
+
 Die aufgeführten Einschränkungen entsprechen überwiegend dem bewusst begrenzten Funktionsumfang von WF-0011 v0.1.0.
 
-Der wichtigste offene Schritt ist der Aufbau des Simulationsworkflows in n8n mit anschließender Ausführung aller Testfälle.
+Der n8n-Export und die visuellen Nachweise wurden vollständig in den vorgesehenen Nachweisordnern abgelegt.

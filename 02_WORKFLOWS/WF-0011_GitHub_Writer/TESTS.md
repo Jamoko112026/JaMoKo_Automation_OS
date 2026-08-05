@@ -39,7 +39,7 @@ Getestet werden:
 
 ## Testumgebung
 
-Die Tests werden zunächst manuell in n8n ausgeführt.
+Die Tests wurden manuell in n8n ausgeführt.
 
 Verwendet werden:
 
@@ -62,6 +62,7 @@ Diese Werte müssen bei jedem Testfall – auch bei Ablehnungen – erhalten ble
   "commitCreated": false,
   "pushExecuted": false
 }
+```
 
 ---
 
@@ -447,7 +448,7 @@ Der Workflow ohne dokumentierten Ausgangs-SHA kontrolliert abbricht.
 
 ### Testaufbau
 
-Der simulierte Patch wird für diesen Test absichtlich mit einer unzulässigen Schreibwirkung erzeugt:
+Für diesen kontrollierten Negativtest wurde die Ausgabe des Patch-Simulations-Nodes vorübergehend so verändert, dass `simulatedPatch.applied` den unzulässigen Wert `true` erhielt. Damit wurde eine bereits erfolgte Schreibwirkung simuliert. Nach Abschluss des Tests wurde die temporäre Änderung vollständig zurückgenommen.
 
 ```json
 {
@@ -544,7 +545,7 @@ Alle Sicherheitswerte `false` sind und im Workflow keine ausführende Schreibkom
 
 ## Testprotokoll
 
-Die Ergebnisse werden nach dem Aufbau des Workflows in dieser Tabelle dokumentiert:
+Die Ergebnisse der ausgeführten Tests sind in der folgenden Tabelle dokumentiert:
 
 | Test-ID | Datum | Ergebnis | Tatsächlicher Status | Tatsächlicher Fehlercode | Bemerkung |
 |---|---|---|---|---|---|
@@ -564,13 +565,13 @@ Die Ergebnisse werden nach dem Aufbau des Workflows in dieser Tabelle dokumentie
 | T-014 | 2026-08-03 | bestanden | rejected | SOURCE_SHA_MISSING | Spezifische SHA-Prüfung erfolgreich |
 | T-015 | 2026-08-03 | bestanden | rejected | PATCH_VALIDATION_FAILED | Patch mit applied=true abgelehnt |
 | T-016 | 2026-08-03 | bestanden | simulated | – | currentValue null korrekt verarbeitet |
-| T-017 | 2026-08-03 | bestanden | simulated/rejected | – | Sämtliche Schreibschutzwerte blieben false |
+| T-017 | 2026-08-03 | bestanden | simulated | – | Sämtliche Schreibschutzwerte blieben false |
 
 ---
 
 ## Abnahmekriterien
 
-WF-0011 v0.1.0 kann vom Status `testing` in den Status `released` überführt werden, wenn:
+WF-0011 v0.1.0 wurde vom Status `testing` in den Status `released` überführt, nachdem folgende Abnahmekriterien erfüllt waren:
 
 - alle 17 Testfälle ausgeführt wurden,
 - alle Testfälle bestanden sind,
