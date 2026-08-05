@@ -10,7 +10,7 @@ Workflow-IDs werden fortlaufend vergeben und sind dauerhaft eindeutig. Eine einm
 
 | ID | Typ | Name | Status |
 |----|-----|------|--------|
-| WF-0011 | Workflow | GitHub Writer | released |
+| WF-0001 | Workflow | Task Intake | released |
 | WF-0002 | Workflow | Trello Board Setup | released |
 | WF-0003 | Workflow | Dashboard Initial Cards | released |
 | WF-0004 | Workflow | Dashboard Sync | released |
@@ -19,6 +19,8 @@ Workflow-IDs werden fortlaufend vergeben und sind dauerhaft eindeutig. Eine einm
 | WF-0008 | Workflow | Object Loader | released |
 | WF-0009 | Workflow | Object Repair Engine | released |
 | WF-0010 | Workflow | Object Auditor | released |
+| WF-0011 | Workflow | GitHub Writer | released |
+| WF-0012 | Workflow | GitHub Reader | released |
 
 ---
 
@@ -34,7 +36,7 @@ Workflow-IDs werden fortlaufend vergeben und sind dauerhaft eindeutig. Eine einm
 ## Nächste freie ID
 
 ```text
-WF-0012
+WF-0013
 ```
 
 ---
@@ -63,4 +65,4 @@ WF-0012
 
 ## Letzte Aktualisierung
 
-2026-08-02
+2026-08-05

@@ -1,0 +1,273 @@
+{
+  "name": "WF-0012",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "25ed7f9d-c3d5-4d95-be5d-26d14350ca80",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      owner: \"Jamoko112026\",\n    repository: \"JaMoKo_Automation_OS\",\n   path: \"01_REGISTRY/workflow_registry.md\",\n      ref: \"main\"\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "e4705c86-b5eb-4889-9d11-e741efbf01d5",
+      "name": "02 Test Input"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const input = $json;\n\nconst requiredFields = [\n  \"owner\",\n  \"repository\",\n  \"path\",\n  \"ref\"\n];\n\nconst missingFields = requiredFields.filter(\n  (field) => !(field in input)\n);\n\nif (missingFields.length > 0) {\n  return {\n    json: {\n      status: \"rejected\",\n      mode: \"read-only\",\n      error: {\n        code: \"INPUT_INVALID\",\n        message: `Pflichtfelder fehlen: ${missingFields.join(\", \")}`\n      }\n    }\n  };\n}\n\nconst invalidTypeFields = requiredFields.filter(\n  (field) => typeof input[field] !== \"string\"\n);\n\nif (invalidTypeFields.length > 0) {\n  return {\n    json: {\n      status: \"rejected\",\n      mode: \"read-only\",\n      error: {\n        code: \"INPUT_INVALID\",\n        message: `Pflichtfelder besitzen einen ungültigen Datentyp: ${invalidTypeFields.join(\", \")}`\n      }\n    }\n  };\n}\n\nconst emptyFields = requiredFields.filter(\n  (field) => input[field].trim().length === 0\n);\n\nif (emptyFields.length > 0) {\n  const errorCode = emptyFields.includes(\"ref\")\n    ? \"REF_MISSING\"\n    : \"INPUT_INVALID\";\n\n  return {\n    json: {\n      status: \"rejected\",\n      mode: \"read-only\",\n      error: {\n        code: errorCode,\n        message: `Pflichtfelder sind leer: ${emptyFields.join(\", \")}`\n      }\n    }\n  };\n}\n\nreturn {\n  json: {\n    status: \"validated\",\n    mode: \"read-only\",\n    input: {\n      owner: input.owner.trim(),\n      repository: input.repository.trim(),\n      path: input.path.trim(),\n      ref: input.ref.trim()\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "4e2688ae-2b3c-470a-ac0e-43636894af03",
+      "name": "03 Validate Input"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const data = $json;\n\nif (data.status === \"rejected\") {\n  return {\n    json: data\n  };\n}\n\nconst allowedTargets = [\n  {\n    owner: \"Jamoko112026\",\n    repository: \"JaMoKo_Automation_OS\"\n  }\n];\n\nconst { owner, repository } = data.input;\n\nconst ownerAllowed = allowedTargets.some(\n  (target) => target.owner === owner\n);\n\nif (!ownerAllowed) {\n  return {\n    json: {\n      status: \"rejected\",\n      mode: \"read-only\",\n      error: {\n        code: \"OWNER_NOT_ALLOWED\",\n        message: \"Der angegebene GitHub-Owner ist nicht freigegeben.\"\n      }\n    }\n  };\n}\n\nconst repositoryAllowed = allowedTargets.some(\n  (target) => target.repository === repository\n);\n\nif (!repositoryAllowed) {\n  return {\n    json: {\n      status: \"rejected\",\n      mode: \"read-only\",\n      error: {\n        code: \"REPOSITORY_NOT_ALLOWED\",\n        message: \"Das angegebene Repository ist nicht freigegeben.\"\n      }\n    }\n  };\n}\n\nconst targetAllowed = allowedTargets.some(\n  (target) =>\n    target.owner === owner &&\n    target.repository === repository\n);\n\nif (!targetAllowed) {\n  return {\n    json: {\n      status: \"rejected\",\n      mode: \"read-only\",\n      error: {\n        code: \"REPOSITORY_NOT_ALLOWED\",\n        message: \"Die Kombination aus Owner und Repository ist nicht freigegeben.\"\n      }\n    }\n  };\n}\n\nreturn {\n  json: {\n    ...data,\n    status: \"target-allowed\",\n    target: {\n      owner,\n      repository\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        0
+      ],
+      "id": "5b54f097-7e2e-44ce-80e3-cbbff585381b",
+      "name": "04 Check Allowed Target"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const data = $json;\n\nif (data.status === \"rejected\") {\n  return {\n    json: data\n  };\n}\n\nconst path = data.input?.path;\n\nif (typeof path !== \"string\" || path.length === 0) {\n  return {\n    json: {\n      status: \"rejected\",\n      mode: \"read-only\",\n      error: {\n        code: \"PATH_INVALID\",\n        message: \"Der Dateipfad fehlt oder ist ungültig.\"\n      }\n    }\n  };\n}\n\nconst hasControlCharacters = /[\\u0000-\\u001F\\u007F]/.test(path);\nconst isAbsolute = path.startsWith(\"/\") || /^[A-Za-z]:[\\\\/]/.test(path);\nconst hasBackslashes = path.includes(\"\\\\\");\nconst hasEmptySegments = path.includes(\"//\");\nconst segments = path.split(\"/\");\nconst hasTraversalSegments = segments.some(\n  (segment) => segment === \".\" || segment === \"..\"\n);\nconst hasWhitespaceBoundary = path !== path.trim();\n\nif (\n  hasControlCharacters ||\n  isAbsolute ||\n  hasBackslashes ||\n  hasEmptySegments ||\n  hasTraversalSegments ||\n  hasWhitespaceBoundary\n) {\n  return {\n    json: {\n      status: \"rejected\",\n      mode: \"read-only\",\n      error: {\n        code: \"PATH_INVALID\",\n        message: \"Der Dateipfad ist nicht als sicherer relativer Repository-Pfad zulässig.\"\n      }\n    }\n  };\n}\n\nconst normalizedPath = segments.join(\"/\");\n\nreturn {\n  json: {\n    ...data,\n    status: \"path-validated\",\n    input: {\n      ...data.input,\n      path: normalizedPath\n    },\n    validatedPath: normalizedPath\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        0
+      ],
+      "id": "899e23c2-9071-4605-834f-7afb41482cae",
+      "name": "05 Validate Path"
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://api.github.com/repos/' + encodeURIComponent($json.target.owner) + '/' + encodeURIComponent($json.target.repository) + '/contents/' + $json.validatedPath.split('/').map(encodeURIComponent).join('/') + '?ref=' + encodeURIComponent($json.input.ref) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1248,
+        0
+      ],
+      "id": "13d311d6-6200-4943-9ad4-a71f045844e8",
+      "name": "06 GitHub Read File"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const response = $json;\nconst request = $(\"05 Validate Path\").item.json;\n\nconst statusCode = Number(response.statusCode ?? 200);\nconst body = response.body ?? response;\n\nfunction rejected(code, message) {\n  return {\n    json: {\n      status: \"rejected\",\n      mode: \"read-only\",\n      error: {\n        code,\n        message\n      }\n    }\n  };\n}\n\nif (statusCode === 401) {\n  return rejected(\n    \"AUTHENTICATION_FAILED\",\n    \"Die GitHub-Authentifizierung ist fehlgeschlagen.\"\n  );\n}\n\nif (statusCode === 403) {\n  return rejected(\n    \"ACCESS_DENIED\",\n    \"Der Zugriff auf die angeforderte GitHub-Datei wurde verweigert.\"\n  );\n}\n\nif (statusCode === 404) {\n  return rejected(\n    \"FILE_NOT_FOUND\",\n    \"Die angeforderte Datei oder Referenz wurde nicht gefunden.\"\n  );\n}\n\nif (statusCode < 200 || statusCode >= 300) {\n  return rejected(\n    \"GITHUB_API_ERROR\",\n    \"Die GitHub API konnte die Anfrage nicht erfolgreich verarbeiten.\"\n  );\n}\n\nif (\n  !body ||\n  body.type !== \"file\" ||\n  typeof body.path !== \"string\" ||\n  typeof body.sha !== \"string\" ||\n  typeof body.content !== \"string\" ||\n  body.encoding !== \"base64\"\n) {\n  return rejected(\n    \"READ_VALIDATION_FAILED\",\n    \"Die GitHub-Antwort enthält nicht die erwarteten Dateidaten.\"\n  );\n}\n\nif (body.path !== request.validatedPath) {\n  return rejected(\n    \"READ_VALIDATION_FAILED\",\n    \"Der zurückgegebene Dateipfad stimmt nicht mit dem angeforderten Pfad überein.\"\n  );\n}\n\nconst normalizedBase64 = body.content.replace(/\\s/g, \"\");\n\nconst hasValidBase64Structure =\n  normalizedBase64.length % 4 === 0 &&\n  /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(\n    normalizedBase64\n  );\n\nif (!hasValidBase64Structure) {\n  return rejected(\n    \"CONTENT_DECODE_FAILED\",\n    \"Der Dateiinhalt konnte nicht dekodiert werden.\"\n  );\n}\n\nlet decodedContent;\n\ntry {\n  const decodedBuffer = Buffer.from(normalizedBase64, \"base64\");\n\n  if (decodedBuffer.toString(\"base64\") !== normalizedBase64) {\n    return rejected(\n      \"CONTENT_DECODE_FAILED\",\n      \"Der Dateiinhalt konnte nicht dekodiert werden.\"\n    );\n  }\n\n  decodedContent = decodedBuffer.toString(\"utf8\");\n} catch {\n  return rejected(\n    \"CONTENT_DECODE_FAILED\",\n    \"Der Dateiinhalt konnte nicht dekodiert werden.\"\n  );\n}\n\nreturn {\n  json: {\n    status: \"read\",\n    mode: \"read-only\",\n    source: {\n      owner: request.target.owner,\n      repository: request.target.repository,\n      ref: request.input.ref\n    },\n    file: {\n      name: body.name,\n      path: body.path,\n      sha: body.sha,\n      encoding: body.encoding,\n      size: body.size,\n      content: decodedContent\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1456,
+        0
+      ],
+      "id": "190b690c-2fbe-483a-b60f-cac106a80708",
+      "name": "07 Normalize GitHub Response"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const data = $json;\n\nconst allowedErrorCodes = new Set([\n  \"INPUT_INVALID\",\n  \"REF_MISSING\",\n  \"OWNER_NOT_ALLOWED\",\n  \"REPOSITORY_NOT_ALLOWED\",\n  \"PATH_INVALID\",\n  \"AUTHENTICATION_FAILED\",\n  \"ACCESS_DENIED\",\n  \"FILE_NOT_FOUND\",\n  \"GITHUB_API_ERROR\",\n  \"CONTENT_DECODE_FAILED\",\n  \"READ_VALIDATION_FAILED\"\n]);\n\nconst writeProtection = {\n  writeRequested: false,\n  writeExecuted: false,\n  commitCreated: false,\n  pushExecuted: false\n};\n\nif (data.status === \"rejected\") {\n  const errorCode = allowedErrorCodes.has(data.error?.code)\n    ? data.error.code\n    : \"GITHUB_API_ERROR\";\n\n  const errorMessage =\n    typeof data.error?.message === \"string\" &&\n    data.error.message.trim().length > 0\n      ? data.error.message.trim()\n      : \"Die Anfrage wurde kontrolliert abgelehnt.\";\n\n  return {\n    json: {\n      status: \"rejected\",\n      mode: \"read-only\",\n      error: {\n        code: errorCode,\n        message: errorMessage\n      },\n      ...writeProtection\n    }\n  };\n}\n\nif (\n  data.status !== \"read\" ||\n  data.mode !== \"read-only\" ||\n  !data.source ||\n  !data.file\n) {\n  return {\n    json: {\n      status: \"rejected\",\n      mode: \"read-only\",\n      error: {\n        code: \"READ_VALIDATION_FAILED\",\n        message: \"Das Leseergebnis ist unvollständig oder ungültig.\"\n      },\n      ...writeProtection\n    }\n  };\n}\n\nreturn {\n  json: {\n    status: \"read\",\n    mode: \"read-only\",\n    source: {\n      owner: data.source.owner,\n      repository: data.source.repository,\n      ref: data.source.ref\n    },\n    file: {\n      name: data.file.name,\n      path: data.file.path,\n      sha: data.file.sha,\n      encoding: data.file.encoding,\n      size: data.file.size,\n      content: data.file.content\n    },\n    ...writeProtection\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1664,
+        0
+      ],
+      "id": "ff2c6b5c-7018-4de4-899d-3dbe22f80484",
+      "name": "08 Write Protection Guard"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "99b00be8-7088-4ebf-899e-9da9100623c3",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "path-validated",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "653561a2-538e-4fed-bd1c-af1708e11062",
+      "name": "05A Route Validated Request"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "02 Test Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02 Test Input": {
+      "main": [
+        [
+          {
+            "node": "03 Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "03 Validate Input": {
+      "main": [
+        [
+          {
+            "node": "04 Check Allowed Target",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "04 Check Allowed Target": {
+      "main": [
+        [
+          {
+            "node": "05 Validate Path",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "05 Validate Path": {
+      "main": [
+        [
+          {
+            "node": "05A Route Validated Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "06 GitHub Read File": {
+      "main": [
+        [
+          {
+            "node": "07 Normalize GitHub Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "07 Normalize GitHub Response": {
+      "main": [
+        [
+          {
+            "node": "08 Write Protection Guard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "05A Route Validated Request": {
+      "main": [
+        [
+          {
+            "node": "06 GitHub Read File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "08 Write Protection Guard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "ff0614ba-364d-4466-938c-56d9a6f7edba",
+  "meta": {
+    "instanceId": "e741a4e739b61d3b5adea51b11deb51bfbf0bbcb91b13a42ce4f3e10b6e83acc"
+  },
+  "nodeGroups": [],
+  "id": "WcCiHIyr6OOMdSUH",
+  "tags": []
+}
