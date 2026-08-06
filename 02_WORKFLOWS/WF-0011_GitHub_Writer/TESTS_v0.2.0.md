@@ -2663,6 +2663,50 @@ not-run
 
 ---
 
+## T-PRI-017 – Commit-Nachricht vor Patch-Validierung
+
+### Änderungen
+
+- Die Commit-Nachricht ist leer.
+- Die Patch-Simulation würde zugleich fehlschlagen.
+
+### Erwartung
+
+```text
+status = rejected
+error_code = INVALID_COMMIT_MESSAGE
+```
+
+### Ergebnis
+
+```text
+not-run
+```
+
+---
+
+## T-PRI-018 – Patch-Validierung vor internem Fehler
+
+### Änderungen
+
+- Die Patch-Validierung schlägt fehl.
+- Zugleich liegt eine nachgelagerte interne Fehlerbedingung vor.
+
+### Erwartung
+
+```text
+status = rejected
+error_code = PATCH_VALIDATION_FAILED
+```
+
+### Ergebnis
+
+```text
+not-run
+```
+
+---
+
 
 # M. Patch-Simulationstests
 
