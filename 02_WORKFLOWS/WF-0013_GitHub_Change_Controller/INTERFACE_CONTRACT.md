@@ -132,13 +132,18 @@ WF-0013 darf ausschließlich normalisierte Ergebnisse von WF-0012 weiterverarbei
 {
   "status": "read",
   "mode": "read-only",
+  "source": {
+    "owner": "Jamoko112026",
+    "repository": "JaMoKo_Automation_OS",
+    "ref": "main"
+  },
   "file": {
     "name": "workflow_registry.md",
     "path": "01_REGISTRY/workflow_registry.md",
     "sha": "0123456789abcdef0123456789abcdef01234567",
     "encoding": "base64",
     "size": 1234,
-    "content": "IyBXb3JrZmxvdyBSZWdpc3RyeQ=="
+    "content": "# Workflow Registry\n"
   }
 }
 ```
@@ -149,12 +154,15 @@ WF-0013 darf ausschließlich normalisierte Ergebnisse von WF-0012 weiterverarbei
 |---|---|---|
 | `status` | Ergebnisstatus | muss exakt `read` sein |
 | `mode` | Betriebsmodus | muss exakt `read-only` sein |
+| `source.owner`      | gelesener Repository-Owner | mit `target.owner` abgleichen |
+| `source.repository` | gelesenes Repository       | mit `target.repository` abgleichen |
+| `source.ref`        | gelesene Git-Referenz      | mit `target.branch` abgleichen |
 | `file.name` | gelesener Dateiname | als Metadatum übernehmen |
 | `file.path` | gelesener Dateipfad | mit `target.path` abgleichen |
 | `file.sha` | aktueller GitHub-SHA | als bestätigten Ausgangsstand übernehmen |
-| `file.encoding` | Kodierung des Inhalts | vor Dekodierung prüfen |
+| `file.encoding` | ursprüngliche GitHub-Kodierung | muss exakt `base64` sein |
 | `file.size` | Dateigröße | als Metadatum übernehmen |
-| `file.content` | kodierter Dateiinhalt | kontrolliert dekodieren und validieren |
+| `file.content`  | von WF-0012 dekodierter Klartext | als bestätigten Ausgangsinhalt validieren |
 
 ### 5.3 SHA-Prüfung und Übernahme
 
@@ -208,12 +216,15 @@ WF-0013 darf den aktuellen Reader-SHA weder als neuen erwarteten SHA einsetzen n
 
 1. `status` exakt `read` ist,
 2. `mode` exakt `read-only` ist,
-3. `file.path` dem validierten Zielpfad entspricht,
-4. `file.sha` dem vorgeschriebenen SHA-Format entspricht,
-5. `file.encoding` unterstützt wird,
-6. der Inhalt erfolgreich dekodiert wurde.
+3. `source.owner` mit `target.owner` übereinstimmt,
+4. `source.repository` mit `target.repository` übereinstimmt,
+5. `source.ref` mit `target.branch` übereinstimmt,
+6. `file.path` dem validierten Zielpfad entspricht,
+7. `file.sha` dem vorgeschriebenen SHA-Format entspricht,
+8. `file.encoding` exakt `base64` ist,
+9. `file.content` als bereits von WF-0012 dekodierter String vorliegt.
 
-Der dekodierte Inhalt bildet den bestätigten Ausgangsinhalt für die kontrollierte Änderung.
+Der von WF-0012 dekodierte Inhalt bildet den bestätigten Ausgangsinhalt für die kontrollierte Änderung.
 
 ### 5.5 Kontrollierte Fehlerausgabe
 
@@ -337,7 +348,7 @@ WF-0013 darf keinen manuell eingegebenen, selbst erzeugten oder nachträglich ve
 
 Vor der Aufnahme in den Writer-Payload muss WF-0013 bestätigen, dass:
 
-1. der Reader-Ausgangsinhalt erfolgreich dekodiert wurde,
+1. der bereits von WF-0012 dekodierte Reader-Ausgangsinhalt validiert wurde,
 2. die Änderung auf diesem bestätigten Ausgangsinhalt basiert,
 3. der Zielinhalt vollständig erzeugt wurde,
 4. der Zielinhalt nicht leer ist,
@@ -399,8 +410,8 @@ Die folgende Matrix bewertet die technische Kompatibilität zwischen `WF-0012 v0
 | WF-0012 → WF-0013 | `mode: read-only` | kompatibel | exakt prüfen |
 | WF-0012 → WF-0013 | `file.path` | kompatibel | mit `target.path` abgleichen |
 | WF-0012 → WF-0013 | `file.sha` | kompatibel | als bestätigten Ausgangs-SHA übernehmen |
-| WF-0012 → WF-0013 | `file.encoding` | bedingt kompatibel | unterstützte Kodierung prüfen |
-| WF-0012 → WF-0013 | `file.content` | bedingt kompatibel | dekodieren und validieren |
+| WF-0012 → WF-0013 | `file.encoding` | kompatibel | muss exakt `base64` sein |
+| WF-0012 → WF-0013 | `file.content` | kompatibel | als bereits dekodierten Klartext validieren |
 | WF-0012 → WF-0013 | `status: rejected` | kompatibel | Verarbeitung kontrolliert abbrechen |
 | WF-0012 → WF-0013 | Schreibschutzwerte | kompatibel | alle Werte müssen `false` sein |
 | WF-0013 → WF-0011 | `request_id` | kompatibel | nur übernehmen, falls vorhanden und gültig |
@@ -441,31 +452,12 @@ WF-0012 v0.1.0 verarbeitet keine `request_id`.
 
 WF-0013 muss die Zuordnung zwischen Änderungsauftrag und Reader-Ergebnis deshalb intern erhalten. Eine Erweiterung des WF-0012-Eingangs ist erst nach einer eigenen Spezifikations- und Versionsänderung zulässig.
 
-#### Abweichung C – unterschiedliche Inhaltsdarstellung
+#### Abweichung C – unterschiedliche Inhaltsverwendung
 
-WF-0012 liefert den Dateiinhalt in:
+WF-0012 liefert in:
 
 ```text
 file.content
-```
-
-mit der in:
-
-```text
-file.encoding
-```
-
-angegebenen Kodierung.
-
-WF-0011 erwartet dagegen den vollständigen Zielinhalt als:
-
-```text
-change.content
-```
-
-WF-0013 muss den Reader-Inhalt daher kontrolliert dekodieren, die freigegebene Änderung anwenden und daraus einen vollständigen neuen Zielinhalt erzeugen.
-
-Der kodierte Reader-Inhalt darf nicht unverändert als `change.content` übernommen werden.
 
 #### Abweichung D – unterschiedliche Betriebsmodi
 
@@ -503,7 +495,7 @@ Die drei Workflows sind auf Vertragsebene grundsätzlich koppelbar, sofern WF-00
 1. `target.branch` kontrolliert zu `ref` abbildet,
 2. `request_id` während des Reader-Auftrags intern erhält,
 3. das Reader-Ergebnis vollständig validiert,
-4. `file.content` entsprechend `file.encoding` dekodiert,
+4. den bereits dekodierten `file.content`-String validiert,
 5. `file.sha` unverändert als `source.expected_sha` übernimmt,
 6. einen vollständigen kontrollierten Zielinhalt erzeugt,
 7. `execution.mode` fest auf `simulation` setzt,
@@ -516,7 +508,7 @@ Vor einer technischen Kopplung müssen mindestens folgende Punkte abgeschlossen 
 - der WF-0012-Ausgangsvertrag wird in dessen Dokumentation ergänzt,
 - die interne Zuordnung über `request_id` wird in WF-0013 implementiert und getestet,
 - das Mapping `target.branch → ref` wird getestet,
-- Dekodierung und Inhaltsvalidierung werden getestet,
+- Klartext- und Inhaltsvalidierung werden getestet,
 - die unveränderte SHA-Übernahme wird getestet,
 - der Writer-Payload wird gegen den Vertrag von WF-0011 v0.2.0 validiert,
 - Fehler- und Ablehnungspfade werden vollständig getestet,
@@ -544,10 +536,13 @@ WF-0013 muss vor jeder weiteren Verarbeitung bestätigen:
 
 - `status` ist exakt `read`,
 - `mode` ist exakt `read-only`,
+- `source.owner` entspricht dem freigegebenen `target.owner`,
+- `source.repository` entspricht dem freigegebenen `target.repository`,
+- `source.ref` entspricht dem freigegebenen `target.branch`,
 - `file.path` entspricht dem freigegebenen `target.path`,
 - `file.sha` ist vorhanden und formal gültig,
-- `file.encoding` wird unterstützt,
-- `file.content` ist vorhanden und erfolgreich dekodierbar,
+- `file.encoding` ist exakt `base64`,
+- `file.content` liegt als bereits von WF-0012 dekodierter String vor,
 - alle Schreibschutzwerte sind `false`.
 
 Bei `status: rejected` oder einer verletzten Bedingung muss die Verarbeitung kontrolliert beendet werden.
@@ -586,8 +581,8 @@ Mindestens folgende Testfälle müssen erfolgreich dokumentiert sein:
 5. abgelehntes Reader-Ergebnis,
 6. abweichender Dateipfad,
 7. fehlender oder ungültiger SHA,
-8. nicht unterstützte Kodierung,
-9. fehlerhafte Inhaltsdekodierung,
+8. von `base64` abweichende `file.encoding`,
+9. fehlender oder ungültiger dekodierter `file.content`-String,
 10. leerer oder unvollständiger Zielinhalt,
 11. ungültige Commit-Nachricht,
 12. fehlende Freigabe,
@@ -642,7 +637,7 @@ Vor der Implementierung von WF-0013 müssen folgende Punkte bearbeitet werden:
 3. Das Mapping `target.branch → ref` wird implementiert und getestet.
 4. Die interne Erhaltung und Rückzuordnung der `request_id` wird festgelegt.
 5. Die Validierung des Reader-Ergebnisses wird implementiert.
-6. Die Dekodierung von `file.content` wird implementiert und abgesichert.
+6. Die Validierung des bereits von WF-0012 dekodierten `file.content`-Strings wird implementiert und abgesichert.
 7. Die unveränderte Übernahme von `file.sha` nach `source.expected_sha` wird geprüft.
 8. Die Erzeugung des vollständigen kontrollierten Zielinhalts wird definiert.
 9. Der vorbereitete Writer-Payload wird gegen den Zielvertrag von WF-0011 v0.2.0 validiert.

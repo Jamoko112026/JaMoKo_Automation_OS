@@ -397,9 +397,9 @@ WF-0012 muss für einen erfolgreichen Vergleich mindestens liefern:
 ```text
 status
 mode
-target.owner
-target.repository
-target.ref
+source.owner
+source.repository
+source.ref
 file.sha
 file.path
 file.content
@@ -417,7 +417,7 @@ WF-0013 prüft:
 - identischen Dateipfad
 - vorhandenen Datei-SHA
 - vorhandenen Dateiinhalt
-- unterstützte Kodierung
+- exakt `base64` als ursprüngliche GitHub-Kodierung
 - widerspruchsfreie Status- und Fehlerfelder
 - Abwesenheit unzulässiger sensibler Daten
 
