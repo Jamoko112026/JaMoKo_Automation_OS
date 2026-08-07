@@ -275,6 +275,33 @@ null
 
 ---
 
+### Verbindliche technische Grenzen
+
+Für WF-0013 v0.1.0 gelten folgende Grenzen und Formate:
+
+- `target.expected_sha` muss dem Muster `^[a-fA-F0-9]{40}$` entsprechen.
+- `change.proposed_content` darf maximal `100000` UTF-8-Bytes umfassen.
+- Ein leerer `proposed_content`-String ist zulässig.
+- `proposed_content` darf keine Nullzeichen enthalten.
+- `proposed_content` wird weder getrimmt noch inhaltlich normalisiert.
+- `change.commit_message` darf maximal 120 Zeichen umfassen.
+- `change.commit_message` muss nach kontrollierter Trimmung mindestens ein sichtbares Zeichen enthalten.
+- `change.commit_message` muss einzeilig und frei von Null- und Steuerzeichen sein.
+- In v0.1.0 werden ausschließlich Dateien mit der Endung `.md` unterstützt.
+- Unbekannte Felder sind auf jeder Ebene des Eingangsobjekts unzulässig.
+
+Eine vorhandene externe `request_id` muss dem folgenden Muster entsprechen:
+
+```regex
+^REQ-[A-Z0-9][A-Z0-9-]{7,63}$
+```
+
+Fehlt die externe `request_id`, darf WF-0013 eine interne Korrelationskennung erzeugen. Diese interne Kennung dient ausschließlich der Verarbeitung und Nachvollziehbarkeit innerhalb von WF-0013. Sie darf nicht als `request_id` an WF-0011 weitergereicht werden.
+
+Die konkrete Kombination aus Owner, Repository, Branch und freigegebenem Pfadbereich wird durch die Allowlist zur Laufzeit geprüft. Sie ist nicht Bestandteil des statischen Eingangsschemas.
+
+---
+
 ## 7. Normalisierung
 
 Vor der fachlichen Prüfung darf WF-0013 kontrollierte Normalisierungen durchführen.

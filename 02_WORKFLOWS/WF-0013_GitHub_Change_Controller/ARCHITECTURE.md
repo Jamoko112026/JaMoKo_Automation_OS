@@ -301,22 +301,34 @@ WF-0013 liest den aktuellen Dateistand nicht selbst.
 
 Der Reader Request Builder erzeugt einen kontrollierten Leseauftrag für WF-0012.
 
-Der Auftrag enthält ausschließlich die erforderlichen Zielfelder:
+Der Auftrag enthält ausschließlich die von WF-0012 v0.1.0 unterstützten Felder:
 
 ```text
-request_id
 owner
 repository
-branch
 path
+ref
 ```
+
+Dabei bildet WF-0013:
+
+```text
+target.owner      → owner
+target.repository → repository
+target.path       → path
+target.branch     → ref
+```
+
+ab.
+
+Die eigene `request_id` wird nicht an WF-0012 übergeben. WF-0013 muss sie intern erhalten und das Reader-Ergebnis kontrolliert dem ursprünglichen Änderungsauftrag zuordnen.
 
 WF-0012 muss mindestens folgende bereinigte Ergebnisfelder liefern:
 
 ```text
-request_id
 status
-target
+mode
+source
 file
 error
 ```
@@ -324,11 +336,11 @@ error
 Für einen erfolgreichen Vergleich werden benötigt:
 
 ```text
-target.owner
-target.repository
-target.branch
-target.path
+source.owner
+source.repository
+source.ref
 file.sha
+file.path
 file.content
 file.encoding
 ```
@@ -336,13 +348,19 @@ file.encoding
 WF-0013 prüft die Antwort von WF-0012 auf:
 
 - erfolgreiche Ausführung
-- passende `request_id`
-- identisches Ziel
-- vorhandenen SHA
-- unterstützte Kodierung
-- vorhandenen Dateiinhalt
-- widerspruchsfreie Statusfelder
-- fehlende sensible Daten
+- `status` exakt `read`
+- `mode` exakt `read-only`
+- interne Zuordnung zum ursprünglichen Änderungsauftrag
+- identischen Owner
+- identisches Repository
+- identischen Branch beziehungsweise `ref`
+- identischen Dateipfad
+- vorhandenen und formal gültigen SHA
+- `file.encoding` exakt `base64`
+- vorhandenen, bereits von WF-0012 dekodierten `file.content`-String
+- widerspruchsfreie Status- und Fehlerfelder
+- `error` muss bei erfolgreichem Ergebnis `null` sein
+- keine sensiblen Daten in der Reader-Antwort
 
 Eine unvollständige oder widersprüchliche Reader-Antwort wird abgelehnt.
 
