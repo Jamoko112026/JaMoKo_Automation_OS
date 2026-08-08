@@ -12,6 +12,7 @@ Das Format orientiert sich an **Keep a Changelog** und verwendet semantische Ver
 
 | Version | Datum | Status |
 |---|---|---|
+| `v0.1.1` | 2026-08-08 | `released` |
 | `v0.1.0` | 2026-08-05 | `released` |
 
 ---
@@ -20,10 +21,41 @@ Das Format orientiert sich an **Keep a Changelog** und verwendet semantische Ver
 
 ### Geplant
 
-- Bereinigten n8n-Workflow exportieren
-- Workflow-Export unter `exports/` ablegen
-- Bereinigte Testnachweise unter `screenshots/` ablegen
+- Technische Export-Implementierung auf Konformität mit dem veröffentlichten
+  `v0.1.1`-Dokumentvertrag bringen
+- Konformen, bereinigten n8n-Workflow-Export unter `exports/` ablegen
+- Konformitätsnachweis für den `v0.1.1`-Dokumentvertrag mit bereinigten
+  Testnachweisen unter `screenshots/` ablegen
 - GitHub-Credential-Berechtigungen dokumentieren
+
+Die technische Export-Konformität ist damit separat offen. Die Veröffentlichung
+des `v0.1.1`-Dokumentvertrags behauptet bis zu diesem Nachweis keine vollständig
+operative Umsetzung.
+
+---
+
+## [0.1.1] – 2026-08-08
+
+### Added
+
+- Verbindlichen Erfolgs- und Fehlerausgabevertrag von `v0.1.1` in
+  `SPECIFICATION.md` und `ARCHITECTURE.md` vollständig veröffentlicht
+- Garantierte Zielmetadaten sowie die eindeutigen Felder für Datei-SHA und
+  dekodierten vollständigen Dateiinhalt festgelegt
+- Fehlerklassen, Inhaltsintegrität und Vertragsgrenzen zu WF-0013 und WF-0011
+  präzisiert
+
+### Changed
+
+- `file.sha` verbindlich auf `^[a-fA-F0-9]{40}$` festgelegt; ungültige oder leere
+  Werte führen zu `READ_VALIDATION_FAILED`
+- Base64-dekodierten Byteinhalt auf strikte und verlustfreie UTF-8-Dekodierung
+  festgelegt; ungültige Bytefolgen oder verlustbehaftete Ersatzzeichen führen zu
+  `CONTENT_DECODE_FAILED`
+- JSON-Strukturbildung eindeutig von jeder Veränderung an Zielwerten, SHA oder
+  Dateiinhalt abgegrenzt
+- `file.name` und `file.size` ausdrücklich als nicht garantiert und nicht
+  vertragsrelevant eingeordnet
 
 ---
 
@@ -49,17 +81,17 @@ Das Format orientiert sich an **Keep a Changelog** und verwendet semantische Ver
 - relative Repository-Pfade als einzige zulässige Pfadform festgelegt
 - Schutz gegen absolute Pfade und Pfadüberschreitungen umgesetzt
 - GitHub-Dateiabruf als ausschließlich lesende Operation umgesetzt
-- folgende Dateidaten werden übernommen:
-  - Dateiname
+- folgende vertragsrelevante Dateidaten werden übernommen:
   - Dateipfad
   - Datei-SHA
   - Encoding
   - dekodierter Inhalt
-  - Dateigröße
+- Dateiname und Dateigröße können technisch vorkommen, sind aber weder garantiert
+  noch vertragsrelevant
 - Base64-Dekodierung des GitHub-Dateiinhalts umgesetzt
 - strikte Prüfung der Base64-Struktur ergänzt
 - Validierung des zurückgegebenen Dateipfads und Datei-SHAs vorgesehen
-- folgende normalisierte Fehlercodes implementiert:
+- folgende standardisierte Fehlercodes implementiert:
   - `INPUT_INVALID`
   - `REF_MISSING`
   - `OWNER_NOT_ALLOWED`
@@ -94,7 +126,8 @@ Das Format orientiert sich an **Keep a Changelog** und verwendet semantische Ver
 - Tolerantes Verhalten von `Buffer.from(..., "base64")` abgesichert
 - Ungültige Base64-Inhalte werden jetzt zuverlässig mit `CONTENT_DECODE_FAILED` abgelehnt
 - Verzeichnisantworten der GitHub API werden kontrolliert mit `READ_VALIDATION_FAILED` abgelehnt
-- GitHub-Fehlerstatus `401`, `403`, `404` und sonstige API-Fehler werden eindeutig normalisiert
+- GitHub-Fehlerstatus `401`, `403`, `404` und sonstige API-Fehler werden eindeutig
+  den dokumentierten Fehlercodes zugeordnet
 
 ### Testing
 
@@ -108,12 +141,12 @@ Alle definierten Testfälle `T-001` bis `T-014` wurden erfolgreich durchgeführt
 - Schreibschutz nach Ablehnung bestätigen
 - fehlendes Pflichtfeld ablehnen
 - leere Referenz ablehnen
-- nicht vorhandene Datei normalisieren
+- nicht vorhandene Datei kontrolliert als `FILE_NOT_FOUND` ablehnen
 - ungültige GitHub-Antwort ablehnen
 - fehlerhafte Base64-Daten ablehnen
-- Authentifizierungsfehler normalisieren
-- verweigerten GitHub-Zugriff normalisieren
-- sonstigen GitHub-API-Fehler normalisieren
+- Authentifizierungsfehler kontrolliert ablehnen
+- verweigerten GitHub-Zugriff kontrolliert ablehnen
+- sonstigen GitHub-API-Fehler kontrolliert ablehnen
 
 Testergebnis: `passed`
 
