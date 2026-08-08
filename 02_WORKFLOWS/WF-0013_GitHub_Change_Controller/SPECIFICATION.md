@@ -18,7 +18,10 @@ Der Workflow verbindet:
 
 WF-0013 liest und schreibt nicht selbst direkt über die GitHub API.
 
-Er prüft einen Änderungsauftrag gegen den aktuellen Dateistand und erzeugt daraus bei erfolgreicher Prüfung einen kontrollierten, noch nicht ausgeführten Schreibauftrag für WF-0011.
+Er prüft einen Änderungsauftrag gegen den aktuellen Dateistand und kontrolliert
+anschließend, ob ein kompatibler veröffentlichter Vertrag für eine spätere
+Übergabe an WF-0011 vorliegt. Mit den aktuell veröffentlichten Verträgen wird kein
+Writer-Auftrag erzeugt.
 
 ---
 
@@ -29,14 +32,14 @@ WF-0013 ist verantwortlich für:
 - Entgegennahme eines strukturierten Änderungsauftrags
 - Validierung aller Pflichtfelder
 - Prüfung des Ziel-Repositories gegen eine Allowlist
-- Prüfung und Normalisierung des Dateipfads
+- unveränderte Validierung des Dateipfads
 - Vorbereitung eines Leseauftrags für WF-0012
 - Prüfung des von WF-0012 gelieferten Dateistands
 - Vergleich von erwartetem und tatsächlichem SHA
 - Vergleich von aktuellem und vorgeschlagenem Inhalt
 - Erkennung unveränderter oder widersprüchlicher Aufträge
 - Prüfung einer ausdrücklichen Boolean-Freigabe
-- Erzeugung eines kontrollierten Schreibauftrags
+- Prüfung der vertraglichen Grenze vor einer späteren Writer-Übergabe
 - Dokumentation der getroffenen Entscheidung
 - sichere und bereinigte Ergebnis- und Fehlerausgabe
 
@@ -66,7 +69,8 @@ Dieser Modus bedeutet:
 
 - Der Änderungsauftrag wird vollständig geprüft.
 - Der aktuelle Dateistand wird über WF-0012 bezogen.
-- Ein Writer-Payload kann vorbereitet werden.
+- Das Writer-Vertragsgate wird geprüft; ein Writer-Payload ist mit den aktuell
+  veröffentlichten Verträgen nicht erreichbar.
 - WF-0011 wird nicht automatisch ausgeführt.
 - Es findet kein Schreibzugriff statt.
 - Es wird kein Commit erstellt.
@@ -133,7 +137,8 @@ change.commit_message
 approval.approved
 ```
 
-`request_id` darf in `v0.1.0` optional sein, sofern die Implementierung kontrolliert eine interne Kennung erzeugt.
+Eine externe `request_id` ist in `v0.1.0` optional. Fehlt sie, erzeugt WF-0013
+eine interne `correlation_id`.
 
 Fehlende Pflichtfelder führen zu:
 
@@ -230,11 +235,12 @@ Anforderungen:
 - innerhalb des konfigurierten Größenlimits
 - keine Binärdaten
 - nicht automatisch aus dem aktuellen Inhalt abgeleitet
-- wird vor einer Writer-Vorbereitung mit dem aktuellen Inhalt verglichen
+- wird im Zustandsvergleich mit dem aktuellen Inhalt verglichen
 
-Ein leerer String darf nur zulässig sein, wenn das vollständige Leeren einer Datei durch einen später dokumentierten Standard ausdrücklich freigegeben wurde.
-
-Bis dahin wird ein leerer Inhalt abgelehnt.
+Ein leerer String ist zulässig. Er beschreibt den vollständigen gewünschten
+Dateiinhalt und ermöglicht damit das kontrollierte Leeren einer Datei. Auch in
+diesem Fall bleibt `proposed_content` unverändert und unterliegt den übrigen
+Prüfungen.
 
 ### 6.8 `change.commit_message`
 
@@ -246,7 +252,8 @@ Anforderungen:
 - keine Zeilenumbrüche, sofern WF-0011 diese nicht ausdrücklich unterstützt
 - keine Steuerzeichen
 - keine Tokens oder Zugangsdaten
-- kompatibel mit dem Vertrag von WF-0011
+- wird lokal validiert, begründet aber ohne kompatiblen veröffentlichten
+  WF-0011-Vertrag keine Writer-Kompatibilität
 
 ### 6.9 `approval.approved`
 
@@ -296,7 +303,10 @@ Eine vorhandene externe `request_id` muss dem folgenden Muster entsprechen:
 ^REQ-[A-Z0-9][A-Z0-9-]{7,63}$
 ```
 
-Fehlt die externe `request_id`, darf WF-0013 eine interne Korrelationskennung erzeugen. Diese interne Kennung dient ausschließlich der Verarbeitung und Nachvollziehbarkeit innerhalb von WF-0013. Sie darf nicht als `request_id` an WF-0011 weitergereicht werden.
+Fehlt die externe `request_id`, erzeugt WF-0013 eine interne `correlation_id`.
+Sie ist niemals eine `request_id`, dient ausschließlich der lokalen Verarbeitung
+und Nachvollziehbarkeit innerhalb von WF-0013 und darf weder an WF-0012 noch an
+WF-0011 übergeben werden.
 
 Die konkrete Kombination aus Owner, Repository, Branch und freigegebenem Pfadbereich wird durch die Allowlist zur Laufzeit geprüft. Sie ist nicht Bestandteil des statischen Eingangsschemas.
 
@@ -336,10 +346,11 @@ Für `v0.1.0` gelten ausschließlich die folgenden Normalisierungsregeln:
    WF-0012 v0.1.0 dokumentierten Pflichtfeldern und hält die interne Korrelation
    außerhalb des Reader-Vertrags.
 5. Fehlt die optionale externe `request_id`, wird eine davon unterscheidbare
-   interne Korrelationskennung erzeugt. Sie muss als internes Feld eindeutig von
-   einer externen `request_id` getrennt sein und darf weder an WF-0012 noch an
-   WF-0011 übergeben werden. Eine vorhandene externe `request_id` wird nicht
-   normalisiert, sondern unverändert gegen das Muster aus Abschnitt 6 geprüft.
+   interne `correlation_id` erzeugt. Sie ist niemals eine `request_id`, muss als
+   internes Feld eindeutig von einer externen `request_id` getrennt sein und darf
+   weder an WF-0012 noch an WF-0011 übergeben werden. Eine vorhandene externe
+   `request_id` wird nicht normalisiert, sondern unverändert gegen das Muster aus
+   Abschnitt 6 geprüft.
    **Begründung:** Die Zuordnung des Reader-Ergebnisses bleibt möglich, ohne
    Herkunft oder Identität einer externen Kennung vorzutäuschen oder die Verträge
    von WF-0012 und WF-0011 zu erweitern.
@@ -360,8 +371,9 @@ Alle übrigen Werte bleiben exakt erhalten. Insbesondere gelten folgende Grenzen
   Zeilenendenkonvertierung, Unicode-Normalisierung, BOM-Ergänzung oder -Entfernung,
   Einrückung, Ergänzung eines finalen Zeilenumbruchs und sonstige inhaltliche
   Änderungen. Größenprüfung und Vergleich dürfen den Wert nur lesen. Der Vergleich
-  mit `reader_result.file.content` erfolgt exakt; bei einer später vertraglich
-  zulässigen Übergabe muss derselbe unveränderte Wert weitergereicht werden.
+  mit dem aus einem gültigen Reader-Ergebnis entnommenen aktuellen Inhalt erfolgt
+  exakt; bei einer später vertraglich zulässigen Übergabe muss derselbe
+  unveränderte Wert weitergereicht werden.
 - Werte aus dem Reader-Ergebnis werden von WF-0013 nicht nachnormalisiert. Ziel,
   SHA und Inhalt müssen in der gelieferten Form validiert und exakt verglichen
   werden. Eine abweichende Form darf nicht passend gemacht werden.
@@ -424,7 +436,9 @@ absolute Pfade
 leere Pfadsegmente
 ```
 
-Der Pfad muss nach der Normalisierung weiterhin innerhalb des freigegebenen Repository-Bereichs liegen.
+`target.path` wird unverändert geprüft und muss innerhalb des freigegebenen
+Repository-Bereichs liegen. Der Wert wird weder getrimmt, Unicode-normalisiert,
+kanonisiert noch anderweitig verändert.
 
 Ein unsicherer oder ungültiger Pfad führt zu:
 
@@ -444,13 +458,16 @@ Er enthält ausschließlich die erforderlichen Felder:
 
 ```json
 {
-  "request_id": "REQ-EXAMPLE-001",
   "owner": "Jamoko112026",
   "repository": "JaMoKo_Automation_OS",
-  "branch": "main",
-  "path": "02_WORKFLOWS/example.md"
+  "path": "02_WORKFLOWS/example.md",
+  "ref": "main"
 }
 ```
+
+Die Werte werden ausschließlich aus dem einmalig normalisierten und anschließend
+validierten Zielobjekt projiziert. Der Auftrag muss genau die von WF-0012 v0.1.0
+veröffentlichten Pflichtfelder `owner`, `repository`, `path` und `ref` enthalten.
 
 Der Reader-Auftrag darf nicht enthalten:
 
@@ -471,38 +488,35 @@ READER_REQUEST_INVALID
 
 ## 11. Reader-Ergebnis
 
-WF-0012 muss für einen erfolgreichen Vergleich mindestens liefern:
+Der veröffentlichte Vertrag von WF-0012 v0.1.0 sagt zu, den aktuellen
+Dateiinhalt und den zugehörigen Datei-SHA in einer normalisierten Erfolgs- oder
+Fehlerausgabe bereitzustellen. Er legt jedoch weder das vollständige JSON-Schema
+noch konkrete Feldnamen und Statuswerte dieser Ausgabe fest. WF-0013 darf daher
+keine Felder wie `status`, `mode`, `source.*`, `file.*`, `encoding` oder `error`
+als veröffentlichten WF-0012-Vertrag voraussetzen.
 
-```text
-status
-mode
-source.owner
-source.repository
-source.ref
-file.sha
-file.path
-file.content
-file.encoding
-error
-```
+Die Reader-Prüfung erfolgt in dieser Reihenfolge:
 
-WF-0013 prüft:
+1. Das Ergebnis wird über den internen Ausführungskontext genau dem zuvor
+   erzeugten Reader-Auftrag zugeordnet. Eine dafür erzeugte `correlation_id`
+   bleibt innerhalb von WF-0013; weder `correlation_id` noch `request_id` werden
+   an WF-0012 übergeben oder von dessen Ergebnis erwartet.
+2. `READER_FAILED` wird ausschließlich ausgegeben, wenn WF-0012 einen Fehler
+   eindeutig als technischen Fehler meldet. Ein nicht validierbares oder nur
+   uneindeutiges Ergebnis genügt dafür nicht.
+3. `READER_RESULT_INVALID` wird ausgegeben, wenn das Ergebnis nicht anhand eines
+   veröffentlichten kompatiblen WF-0012-Ausgabevertrags validiert werden kann oder
+   wenn daraus der aktuelle Datei-SHA und der bereits dekodierte
+   Dateiinhalt-String nicht eindeutig entnommen werden können. Es wird kein Wert
+   abgeleitet oder nachnormalisiert.
+4. Eine Zielübereinstimmung darf nur anhand solcher Zielmetadaten geprüft werden,
+   die ein veröffentlichter Ausgabevertrag tatsächlich liefert. `TARGET_MISMATCH`
+   wird ausschließlich bei einer nachweisbaren Abweichung dieser gelieferten
+   Zielmetadaten vom angefragten Ziel ausgegeben. Fehlende, nicht vertraglich
+   zugesicherte Zielmetadaten lösen niemals `TARGET_MISMATCH` aus.
 
-- erfolgreichen Reader-Status
-- interne Zuordnung zum ursprünglichen Änderungsauftrag
-- identischen Owner
-- identisches Repository
-- identischen Branch
-- identischen Dateipfad
-- vorhandenen Datei-SHA
-- vorhandenen Dateiinhalt
-- exakt `base64` als ursprüngliche GitHub-Kodierung
-- widerspruchsfreie Status- und Fehlerfelder
-- Abwesenheit unzulässiger sensibler Daten
-
-WF-0012 v0.1.0 unterstützt keine `request_id`.
-
-WF-0013 muss die `request_id` des ursprünglichen Änderungsauftrags während des Reader-Auftrags intern erhalten und das Reader-Ergebnis eindeutig diesem Auftrag zuordnen. Eine `request_id` darf nicht an WF-0012 übergeben oder von dessen Ergebnis erwartet werden.
+Erst nach erfolgreichem Abschluss dieser Reader-Prüfung darf WF-0013 den
+Reader-Vergleich in den Abschnitten 12 und 13 beginnen.
 
 Ein technischer Reader-Fehler führt zu:
 
@@ -532,7 +546,7 @@ Verglichen werden:
 
 ```text
 target.expected_sha
-reader_result.file.sha
+aus dem gültigen Reader-Ergebnis entnommener aktueller Datei-SHA
 ```
 
 Beide Werte müssen exakt übereinstimmen.
@@ -555,7 +569,7 @@ WF-0013 vergleicht:
 
 ```text
 change.proposed_content
-reader_result.file.content
+aus dem gültigen Reader-Ergebnis entnommener aktueller Dateiinhalt
 ```
 
 Sind beide Inhalte identisch, liegt keine Änderung vor.
@@ -572,9 +586,10 @@ In diesem Fall:
 - wird WF-0011 nicht aufgerufen
 - bleibt `write_executed` auf `false`
 
-Der Inhaltsvergleich muss deterministisch sein.
-
-Eine mögliche Normalisierung von Zeilenenden muss vor der Implementierung ausdrücklich festgelegt und dokumentiert werden.
+Der Inhaltsvergleich muss deterministisch und exakt sein. Weder
+`change.proposed_content` noch der gelieferte aktuelle Inhalt werden für den
+Vergleich getrimmt, in ihren Zeilenenden verändert oder anderweitig
+nachnormalisiert.
 
 ---
 
@@ -586,14 +601,17 @@ Die Freigabe wird erst ausgewertet, nachdem:
 - Betriebsmodus
 - Ziel
 - Pfad
+- Allowlist
 - Änderungsinhalt
 - Reader-Auftrag
 - Reader-Ergebnis
-- Zielübereinstimmung
+- Prüfung vertraglich garantierter Zielmetadaten, sofern solche geliefert werden
 - SHA
 - Inhaltsänderung
 
-erfolgreich geprüft wurden.
+erfolgreich geprüft wurden. Fehlende, nicht vertraglich zugesicherte
+Zielmetadaten lösen weder `TARGET_MISMATCH` aus noch gelten sie als implizite
+Zielbestätigung oder Freigabe.
 
 Nur folgender Wert gilt als gültige Freigabe:
 
@@ -615,52 +633,22 @@ Eine gültige Freigabe hebt keine andere Ablehnung auf.
 
 ## 15. Writer-Auftrag
 
-Nur bei vollständigem Erfolg erzeugt WF-0013 einen Writer-Auftrag für WF-0011.
+Nach erfolgreichem Zustandsvergleich und erfolgreicher Freigabeprüfung muss vor
+jeder Writer-Vorbereitung ein kompatibler, veröffentlichter Vertrag von WF-0011
+vorliegen.
 
-Das Zielmodell besteht aus:
+Der veröffentlichte Vertrag von WF-0011 v0.1.0 erwartet einen feldbezogenen,
+freigegebenen und auditierten Änderungsvorschlag mit unter anderem `objectId`,
+`field`, `currentValue`, `approvedValue`, `approvalStatus`, `approvedBy` und
+`auditStatus`. Der WF-0013-Eingang enthält diese Angaben nicht und beschreibt
+stattdessen einen vollständigen neuen Dateiinhalt. WF-0013 darf die fehlenden
+Writer-Felder nicht aus `proposed_content` ableiten oder erfinden.
 
-```text
-execution
-target
-source
-change
-request_id
-```
-
-Beispiel:
-
-```json
-{
-  "execution": {
-    "mode": "simulation"
-  },
-  "target": {
-    "owner": "Jamoko112026",
-    "repository": "JaMoKo_Automation_OS",
-    "branch": "main",
-    "path": "02_WORKFLOWS/example.md"
-  },
-  "source": {
-    "expected_sha": "CURRENT_FILE_SHA",
-    "controller": "WF-0013",
-    "controller_version": "v0.1.0"
-  },
-  "change": {
-    "content": "Vollständiger neuer Dateiinhalt",
-    "commit_message": "Update controlled workflow file"
-  },
-  "request_id": "REQ-EXAMPLE-001"
-}
-```
-
-Der konkrete Wert von `execution.mode` wird in `v0.1.0` fest auf `simulation` gesetzt und muss dem freigegebenen Vertrag von WF-0011 v0.2.0 entsprechen.
-
-WF-0013 darf:
-
-- keinen produktiven Writer-Modus erfinden
-- keinen ungeprüften Modus aus dem Eingang übernehmen
-- WF-0011 nicht automatisch ausführen
-- keine Writer-Credentials ergänzen
+Damit kann WF-0013 aus dem hier definierten Auftrag derzeit keinen zu WF-0011
+v0.1.0 kompatiblen Writer-Auftrag erzeugen oder validieren. Bis ein kompatibler
+Writer-Vertrag veröffentlicht ist, endet die Verarbeitung an dieser
+Übergabegrenze; WF-0011 wird nicht aufgerufen und `proposed_content` bleibt
+unverändert.
 
 Ein ungültiger Writer-Auftrag führt zu:
 
@@ -672,22 +660,58 @@ WRITER_REQUEST_INVALID
 
 ## 16. Entscheidungsreihenfolge
 
-Die Prüfungen erfolgen in dieser Priorität:
+Die Prüfungen erfolgen als getrennte Gates in dieser Reihenfolge:
 
-1. Eingangsstruktur
-2. Betriebsmodus
-3. Ziel- und Allowlist-Prüfung
-4. Pfadprüfung
-5. Änderungsinhalt
-6. Reader-Auftrag
-7. Reader-Ausführung oder Reader-Ergebnis
-8. Validität des Reader-Ergebnisses
-9. Übereinstimmung des Ziels
-10. SHA-Vergleich
-11. Inhaltsvergleich
-12. Freigabe
-13. Writer-Auftrag
-14. erfolgreiche Vorbereitung
+1. **Eingangsvalidierung:** WF-0013 prüft genau ein JSON-Objekt, die zulässigen
+   Haupt- und Unterfelder, alle Pflichtfelder sowie deren ursprüngliche
+   Datentypen. Fehlende Felder, unbekannte Felder, `null` an unzulässiger Stelle
+   oder falsche Datentypen führen zu `INVALID_INPUT`. Insbesondere wird
+   `proposed_content` dabei nur als String bestätigt und nicht verändert.
+2. **Normalisierung:** Ausschließlich die Regeln aus Abschnitt 7 werden auf den
+   typgeprüften Eingang angewendet. Die Normalisierung konvertiert keine Typen und
+   repariert keine ungültigen Werte.
+3. **Validierung des normalisierten Auftrags:** Zuerst wird
+   `execution.mode` exakt geprüft; eine Abweichung führt zu `INVALID_MODE`.
+   Anschließend werden die unveränderte externe `request_id` und
+   `target.expected_sha` formal geprüft. Ungültige Werte führen zu
+   `INVALID_INPUT`.
+4. **Ziel- und Pfadprüfung:** Owner, Repository und Branch werden formal geprüft.
+   Ein unsicherer oder formal ungültiger Pfad führt zu `INVALID_PATH`; sonstige
+   formal ungültige Zielwerte führen zu `INVALID_INPUT`.
+5. **Allowlist-Prüfung:** Erst der formal gültige, normalisierte Zielwert wird als
+   vollständige Kombination aus Owner, Repository, Branch, Pfadbereich und
+   Dateiendung gegen die konfigurierte Allowlist geprüft. Eine Abweichung führt zu
+   `TARGET_NOT_ALLOWED`. Vor erfolgreichem Abschluss dieses Gates wird kein
+   Inhalt geprüft und kein Reader-Auftrag erzeugt.
+6. **Inhaltsprüfung:** Der unveränderte `proposed_content`-String und die
+   normalisierte Commit-Nachricht werden gegen die Regeln aus Abschnitt 6 geprüft.
+   Ein leerer `proposed_content`-String ist gültig. Sonstige ungültige Inhalte
+   führen zu `INVALID_CHANGE`, eine Überschreitung des Größenlimits zu
+   `CONTENT_TOO_LARGE`.
+7. **Reader-Auftrag:** Aus dem geprüften Ziel werden exakt `owner`, `repository`,
+   `path` und `ref` gebildet und gegen den veröffentlichten Eingang von WF-0012
+   geprüft. Ein intern abweichender Auftrag führt zu `READER_REQUEST_INVALID`.
+8. **Reader-Prüfung:** Die Fehlergrenzen aus Abschnitt 11 gelten exakt:
+   `READER_FAILED` nur bei einem eindeutig technisch gemeldeten WF-0012-Fehler,
+   `READER_RESULT_INVALID` bei fehlender vertraglicher Validierbarkeit oder nicht
+   eindeutig entnehmbarem SHA beziehungsweise Inhalt und `TARGET_MISMATCH` nur bei
+   nachweisbar abweichenden, vertraglich gelieferten Zielmetadaten. Fehlende, nicht
+   zugesicherte Zielmetadaten lösen niemals `TARGET_MISMATCH` aus.
+9. **SHA-Vergleich:** Erst nach erfolgreicher Reader-Prüfung wird
+   `target.expected_sha` exakt mit dem aktuellen Reader-SHA verglichen. Eine
+   Abweichung führt zu `SHA_CONFLICT`.
+10. **Inhaltsvergleich:** Nur bei übereinstimmendem SHA wird der unveränderte
+    `change.proposed_content`-String exakt mit dem aktuellen Reader-Inhalt
+    verglichen. Identische Inhalte führen zu `NO_CHANGE`.
+11. **Freigabeprüfung:** Nur nach einer tatsächlichen Inhaltsänderung wird
+   `approval.approved` ausgewertet. Ausschließlich Boolean `true` ist gültig;
+   andernfalls folgt `INVALID_APPROVAL`.
+12. **Writer-Vertragsgate:** Erst nach allen vorherigen Gates darf die
+    Kompatibilität mit einem veröffentlichten WF-0011-Vertrag geprüft werden. Für
+    WF-0011 v0.1.0 besteht die in Abschnitt 15 dokumentierte Übergabegrenze;
+    fehlende Writer-Felder dürfen nicht abgeleitet werden. Der Auftrag endet mit
+    `WRITER_REQUEST_INVALID`. `WRITER_REQUEST_PREPARED` und der Status `prepared`
+    bleiben bis zu einem kompatiblen veröffentlichten Vertrag unerreichbar.
 
 Bei mehreren möglichen Fehlern wird der zuerst erreichte Fehler gemäß dieser Reihenfolge ausgegeben.
 
@@ -706,7 +730,6 @@ workflow
 version
 mode
 status
-request_id
 decision
 target
 comparison
@@ -716,91 +739,33 @@ execution
 error
 ```
 
+Die Kennungsfelder sind bedingt:
+
+- `request_id` darf nur enthalten sein, wenn der Eingang eine formal gültige
+  externe `request_id` enthielt; ihr Wert bleibt unverändert.
+- Fehlt eine externe `request_id`, darf die Ausgabe ausschließlich die intern
+  bezeichnete `correlation_id` zur lokalen Nachvollziehbarkeit enthalten.
+- `correlation_id` ist niemals eine `request_id` und wird weder an WF-0012 noch an
+  WF-0011 übergeben.
+
 Zulässige Statuswerte:
 
 ```text
-prepared
 rejected
 failed
 ```
 
+Der Status `prepared` ist für eine spätere kompatible Vertragsversion reserviert,
+bleibt in `v0.1.0` mit den aktuell veröffentlichten Verträgen jedoch unerreichbar.
+
 ---
 
-## 18. Erfolgreiches Ergebnis
+## 18. Unerreichbarer Vorbereitungsstatus
 
-Ein erfolgreich vorbereitetes Ergebnis besitzt:
-
-```text
-status = prepared
-decision.allowed = true
-decision.code = WRITER_REQUEST_PREPARED
-writer_request.prepared = true
-execution.writer_called = false
-execution.write_executed = false
-execution.commit_created = false
-execution.push_executed = false
-error = null
-```
-
-Beispiel:
-
-```json
-{
-  "workflow": "WF-0013",
-  "version": "v0.1.0",
-  "mode": "prepare-only",
-  "status": "prepared",
-  "request_id": "REQ-EXAMPLE-001",
-  "decision": {
-    "allowed": true,
-    "code": "WRITER_REQUEST_PREPARED"
-  },
-  "target": {
-    "owner": "Jamoko112026",
-    "repository": "JaMoKo_Automation_OS",
-    "branch": "main",
-    "path": "02_WORKFLOWS/example.md"
-  },
-  "comparison": {
-    "sha_matches": true,
-    "content_changed": true
-  },
-  "approval": {
-    "approved": true
-  },
-  "writer_request": {
-    "prepared": true,
-    "payload": {
-      "execution": {
-        "mode": "simulation"
-      },
-      "target": {
-        "owner": "Jamoko112026",
-        "repository": "JaMoKo_Automation_OS",
-        "branch": "main",
-        "path": "02_WORKFLOWS/example.md"
-      },
-      "source": {
-        "expected_sha": "CURRENT_FILE_SHA",
-        "controller": "WF-0013",
-        "controller_version": "v0.1.0"
-      },
-      "change": {
-        "content": "Vollständiger neuer Dateiinhalt",
-        "commit_message": "Update controlled workflow file"
-      },
-      "request_id": "REQ-EXAMPLE-001"
-    }
-  },
-  "execution": {
-    "writer_called": false,
-    "write_executed": false,
-    "commit_created": false,
-    "push_executed": false
-  },
-  "error": null
-}
-```
+`WRITER_REQUEST_PREPARED`, `status = prepared` und ein konkreter
+Vollinhalt-Writer-Payload sind in `v0.1.0` mit den aktuell veröffentlichten
+Verträgen nicht zulässige Laufzeitergebnisse. Sie bleiben für eine spätere
+Version mit kompatiblem veröffentlichtem WF-0011-Vertrag reserviert.
 
 ---
 
@@ -900,6 +865,9 @@ INTERNAL_CONTROLLER_ERROR
 WRITER_REQUEST_PREPARED
 ```
 
+`WRITER_REQUEST_PREPARED` ist reserviert und mit den aktuell veröffentlichten
+Verträgen in `v0.1.0` nicht erreichbar.
+
 Fehlercodes sind maschinenlesbar und stabil zu halten.
 
 Fehlermeldungen sind für Menschen verständlich, enthalten aber keine sensiblen Details.
@@ -939,7 +907,7 @@ push_executed = false
 
 Diese Werte gelten auch bei:
 
-- erfolgreicher Vorbereitung
+- Erreichen des Writer-Vertragsgates
 - fachlicher Ablehnung
 - Reader-Fehler
 - internem Controller-Fehler
@@ -955,7 +923,8 @@ Protokolliert werden dürfen:
 - Workflow-ID
 - Workflow-Version
 - Betriebsmodus
-- `request_id`
+- eine vorhandene externe `request_id` oder andernfalls die klar intern
+  bezeichnete `correlation_id`
 - bereinigtes Ziel
 - Entscheidungscode
 - Ergebnisstatus
@@ -1012,7 +981,8 @@ WF-0013 gilt auf Spezifikationsebene als abnahmefähig, wenn:
 9. SHA-Konflikte erkannt werden,
 10. unveränderte Inhalte erkannt werden,
 11. ausschließlich Boolean `true` als Freigabe gilt,
-12. ein Writer-Payload nur bei vollständigem Erfolg entsteht,
+12. das Writer-Vertragsgate WF-0011 v0.1.0 als nicht kompatibel erkennt und keinen
+    Writer-Payload erzeugt,
 13. WF-0011 niemals automatisch ausgeführt wird,
 14. sämtliche Ausgaben bereinigt werden,
 15. alle Seiteneffekt-Flags immer `false` bleiben.
@@ -1051,12 +1021,7 @@ Folgende Änderungen erfordern mindestens eine neue Version und eine Aktualisier
 
 WF-0013 endet immer mit genau einem bereinigten Ergebnisobjekt.
 
-Das einzige positive Endergebnis von `v0.1.0` ist:
-
-```text
-WRITER_REQUEST_PREPARED
-```
-
-Dieses Ergebnis bestätigt ausschließlich, dass ein Writer-Auftrag vorbereitet wurde.
-
-Es bestätigt keinen Schreibvorgang, keinen Commit und keinen Push.
+Mit den aktuell veröffentlichten Verträgen endet ein bis zum Writer-Vertragsgate
+gelangter Auftrag mit `WRITER_REQUEST_INVALID`. `WRITER_REQUEST_PREPARED` und der
+Status `prepared` bleiben in `v0.1.0` unerreichbar. Kein Ergebnis bestätigt einen
+Schreibvorgang, Commit oder Push.
