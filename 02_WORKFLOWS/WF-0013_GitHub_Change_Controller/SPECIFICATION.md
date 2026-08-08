@@ -304,25 +304,77 @@ Die konkrete Kombination aus Owner, Repository, Branch und freigegebenem Pfadber
 
 ## 7. Normalisierung
 
-Vor der fachlichen Prüfung darf WF-0013 kontrollierte Normalisierungen durchführen.
+Die Normalisierung beginnt erst, nachdem Eingangsstruktur und String-Datentypen
+geprüft wurden. Sie darf weder Typen konvertieren noch fehlende Pflichtfelder
+ergänzen. Dadurch können beispielsweise Zahlen, Boolean-Werte oder `null` nicht
+durch Normalisierung zu gültigen Textwerten werden.
 
-Zulässig sind:
+Für `v0.1.0` gelten ausschließlich die folgenden Normalisierungsregeln:
 
-- Entfernen äußerer Leerzeichen bei definierten Textfeldern
-- Vereinheitlichung eindeutig dokumentierter Feldformen
-- Erzeugung einer internen `request_id`, wenn keine vorhanden ist
-- kanonische Darstellung des Zielobjekts
+1. Bei `target.owner`, `target.repository` und `target.branch` werden nur führende
+   und nachgestellte ASCII-Leerzeichen `U+0020` entfernt. Andere Leerraumzeichen,
+   Steuerzeichen, Groß-/Kleinschreibung und der innere Wert bleiben unverändert.
+   **Begründung:** Die drei Werte werden als technische Bezeichner an WF-0012
+   weitergegeben; eine eng begrenzte Randbereinigung verhindert mehrdeutige
+   Zielwerte, ohne einen anderen Owner, ein anderes Repository oder einen anderen
+   Branch abzuleiten.
+2. Bei `change.commit_message` werden nur führende und nachgestellte
+   ASCII-Leerzeichen `U+0020` entfernt. Die Nachricht wird anschließend gegen die
+   Längen- und Zeichenregeln aus Abschnitt 6 geprüft; ihr innerer Inhalt wird nicht
+   verändert. **Begründung:** So ist die lokale Leerheits- und Längenprüfung
+   eindeutig, ohne eine Commit-Nachricht zu erfinden oder inhaltlich umzuschreiben.
+3. Aus den nach Regel 1 validierten Zielwerten wird einmalig ein kanonisches
+   Zielobjekt gebildet. Genau dessen Werte werden für Allowlist, Reader-Auftrag,
+   Prüfung des Reader-Ergebnisses und eine spätere Writer-Übergabe verwendet; eine
+   erneute Normalisierung zwischen diesen Stufen ist unzulässig. **Begründung:**
+   Alle Prüfungen beziehen sich damit auf dasselbe Ziel und können nicht durch
+   stufenabhängige Umformungen auseinanderlaufen.
+4. Für den Reader-Auftrag wird ausschließlich der Feldname abgebildet:
+   `target.branch` wird mit unverändertem Wert zu `ref`; `owner`, `repository` und
+   `path` werden unter ihren gleichnamigen Feldern übernommen. Diese Projektion
+   fügt keine `request_id` hinzu. **Begründung:** Dies entspricht den vier in
+   WF-0012 v0.1.0 dokumentierten Pflichtfeldern und hält die interne Korrelation
+   außerhalb des Reader-Vertrags.
+5. Fehlt die optionale externe `request_id`, wird eine davon unterscheidbare
+   interne Korrelationskennung erzeugt. Sie muss als internes Feld eindeutig von
+   einer externen `request_id` getrennt sein und darf weder an WF-0012 noch an
+   WF-0011 übergeben werden. Eine vorhandene externe `request_id` wird nicht
+   normalisiert, sondern unverändert gegen das Muster aus Abschnitt 6 geprüft.
+   **Begründung:** Die Zuordnung des Reader-Ergebnisses bleibt möglich, ohne
+   Herkunft oder Identität einer externen Kennung vorzutäuschen oder die Verträge
+   von WF-0012 und WF-0011 zu erweitern.
 
-Nicht zulässig sind:
+Alle übrigen Werte bleiben exakt erhalten. Insbesondere gelten folgende Grenzen:
 
-- automatische Änderung des Owners
-- automatische Änderung des Repositories
-- automatische Änderung des Branches
-- automatische Korrektur eines unsicheren Pfads
-- automatische Ersetzung des erwarteten SHA
-- automatische Erteilung einer Freigabe
-- automatische Veränderung des vorgeschlagenen Inhalts
-- Erfindung einer Commit-Nachricht
+- `execution.mode`, `target.path`, `target.expected_sha`, `approval.approved` und
+  eine vorhandene externe `request_id` werden nicht getrimmt, umkodiert oder in
+  einen anderen Typ überführt.
+- Groß-/Kleinschreibung wird nirgends vereinheitlicht. Insbesondere werden SHA,
+  Owner, Repository, Branch beziehungsweise `ref` und `request_id` nicht in Groß-
+  oder Kleinbuchstaben umgeschrieben.
+- `target.path` wird weder URL-dekodiert noch werden Backslashes ersetzt,
+  Punktsegmente aufgelöst, Schrägstriche zusammengezogen oder Unicode-Zeichen
+  normalisiert. Ein nur durch eine solche Korrektur gültiger Pfad wird abgelehnt.
+- `change.proposed_content` wird nach der Typprüfung als unveränderter Stringwert
+  durch alle Stufen geführt. Verboten sind insbesondere Trimmen,
+  Zeilenendenkonvertierung, Unicode-Normalisierung, BOM-Ergänzung oder -Entfernung,
+  Einrückung, Ergänzung eines finalen Zeilenumbruchs und sonstige inhaltliche
+  Änderungen. Größenprüfung und Vergleich dürfen den Wert nur lesen. Der Vergleich
+  mit `reader_result.file.content` erfolgt exakt; bei einer später vertraglich
+  zulässigen Übergabe muss derselbe unveränderte Wert weitergereicht werden.
+- Werte aus dem Reader-Ergebnis werden von WF-0013 nicht nachnormalisiert. Ziel,
+  SHA und Inhalt müssen in der gelieferten Form validiert und exakt verglichen
+  werden. Eine abweichende Form darf nicht passend gemacht werden.
+- Eine Normalisierung darf weder eine Freigabe ableiten noch den erwarteten SHA
+  ersetzen oder eine Commit-Nachricht erzeugen.
+
+Die vorliegenden Verträge von WF-0012 v0.1.0 legen dessen vollständige
+Erfolgsausgabe nicht fest. Ebenso akzeptiert der veröffentlichte Vertrag von
+WF-0011 v0.1.0 keinen Vollinhalt-Writer-Auftrag mit `change.content` und
+`commit_message`. WF-0013 darf diese Vertragslücken nicht durch weitere
+Normalisierung, Feldableitung oder Umformung überbrücken. Bis zu einem kompatiblen,
+dokumentierten Schnittstellenvertrag endet die sichere Verarbeitung an der jeweils
+betroffenen Übergabegrenze.
 
 Die Normalisierung darf die fachliche Bedeutung des Auftrags nicht verändern.
 
