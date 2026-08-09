@@ -1,0 +1,56 @@
+{
+  "report_type": "local-read-only-test",
+  "workflow": "WF-0012_GitHub_Reader",
+  "test_id": "LRT-002",
+  "test_date": "2026-08-09",
+  "scope": "currently-open-local-repository",
+  "result": "passed-local-read-only",
+  "contract_boundary": "This report documents a separate local working-tree state test. It is not an n8n workflow export and does not extend the published WF-0012 v0.1.1 GitHub Reader contract.",
+  "test_condition": {
+    "kind": "single-temporary-untracked-file",
+    "repository_relative_path": "02_WORKFLOWS/WF-0012_GitHub_Reader/LRT-002_UNTRACKED_PROBE.tmp",
+    "path_absent_before_setup": true,
+    "path_not_ignored_by_git": true,
+    "created_by_test_harness": true
+  },
+  "read_operations": [
+    "git rev-parse --is-inside-work-tree",
+    "git branch --show-current",
+    "git status --porcelain=v1 --untracked-files=all",
+    "git ls-files --others --exclude-standard"
+  ],
+  "observations": {
+    "baseline_working_tree": "clean",
+    "git_repository_detected": true,
+    "current_branch": "main",
+    "working_tree_with_test_condition": "dirty",
+    "tracked_change_count": 0,
+    "untracked_file_count": 1,
+    "temporary_condition_detected": true,
+    "working_tree_after_cleanup": "clean",
+    "temporary_path_absent_after_cleanup": true
+  },
+  "responsibility_boundary": {
+    "reader_modified_repository_files": false,
+    "test_harness_created_temporary_condition": true,
+    "test_harness_removed_temporary_condition": true,
+    "pre_test_state_restored_before_reporting": true
+  },
+  "sanitization": {
+    "repository_relative_paths_only": true,
+    "file_contents_recorded": false,
+    "remote_urls_read_or_recorded": false,
+    "credentials_read_or_recorded": false,
+    "tokens_or_secrets_recorded": false
+  },
+  "prohibited_actions": {
+    "n8n_workflow_executed": false,
+    "github_api_or_http_called": false,
+    "credentials_used": false,
+    "remote_accessed": false,
+    "commit_created": false,
+    "push_executed": false,
+    "tag_created_or_changed": false,
+    "writer_behavior_executed": false
+  }
+}

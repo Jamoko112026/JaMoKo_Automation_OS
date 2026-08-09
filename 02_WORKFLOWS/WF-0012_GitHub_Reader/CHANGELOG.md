@@ -54,6 +54,15 @@ Das Format orientiert sich an **Keep a Changelog** und verwendet semantische Ver
 - Der lokale Test enthielt keine Datei-Inhalte, Remotes, Credentials oder
   Secrets und führte weder n8n, GitHub API/HTTP noch Write-, Commit-, Push- oder
   Tag-Operationen aus; er erweitert den veröffentlichten `v0.1.1`-Vertrag nicht
+- Strikt lokalen Working-Tree-Test `LRT-002` am 2026-08-09 mit genau einer
+  temporären, untracked Probe-Datei durchgeführt; der lokale Reader erkannte den
+  Working Tree neutral als `dirty`, ohne selbst Dateien zu verändern
+- Probe anschließend vollständig entfernt und den wieder sauberen Ausgangszustand
+  vor Erstellung des sanitisierten Reports
+  `exports/WF-0012_local-read-only-test-report_LRT-002_2026-08-09.json`
+  bestätigt; keine n8n-, Netzwerk-, Credential-, Remote-, Write-, Commit-,
+  Push- oder Tag-Operation ausgeführt und keine Vertrags- oder Versionsänderung
+  vorgenommen
 - Lokale Code- und Strukturtests `T-015` bis `T-030` für den v0.1.1-Export
   erfolgreich durchgeführt
 - Runtime-Export

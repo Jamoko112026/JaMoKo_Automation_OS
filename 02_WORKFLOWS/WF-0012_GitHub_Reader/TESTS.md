@@ -260,3 +260,40 @@ exports/WF-0012_local-read-only-test-report_2026-08-09.json
 
 Der Test ändert weder die technische Exportkonformität noch den Release-Status:
 Der Dokumentvertrag und der veröffentlichte Workflow-Export bleiben `v0.1.1`.
+
+### 8.2 LRT-002 vom 2026-08-09
+
+`LRT-002` prüft ausschließlich lokal, ob ein bewusst unsauberer Working Tree
+neutral als `dirty` erkannt wird. Der Test ist kein Lauf des n8n-Exports und
+erweitert den veröffentlichten `v0.1.1`-Vertrag nicht.
+
+| Test-ID | Testfall | Erwartung | Ergebnis | Status |
+|---|---|---|---|---|
+| `LRT-002` | Genau eine harmlose temporäre, untracked Probe-Datei | Working Tree wird als `dirty` erkannt; keine versionierte Datei ist geändert; nach Entfernung der Probe ist der Ausgangszustand wieder `clean` | Genau eine untracked Datei und null Änderungen an versionierten Dateien erkannt; Probe vollständig entfernt; Working Tree danach wieder `clean` | `passed-local-read-only` |
+
+Der Test-Harness verwendete ausschließlich den repository-relativen Pfad:
+
+```text
+02_WORKFLOWS/WF-0012_GitHub_Reader/LRT-002_UNTRACKED_PROBE.tmp
+```
+
+Vor der Erzeugung war der Pfad nicht vorhanden und wurde nicht durch Git
+ignoriert. Der Reader-Schritt las ausschließlich Repository-Erkennung, Branch,
+Working-Tree-Status sowie die Anzahl untracked und geänderter versionierter
+Pfade. Er erzeugte, veränderte oder entfernte selbst keine Datei. Er erfasste
+keine Datei-Inhalte, absoluten Pfade, Remotes, Credentials, Tokens oder Secrets.
+
+Die Probe wurde ausschließlich durch den Test-Harness erzeugt und anschließend
+vollständig entfernt. Vor der Erstellung von Report und Dokumentation wurde ein
+wieder sauberer Working Tree bestätigt. Es wurden kein n8n-Workflow, kein
+GitHub-API-, HTTP-, Credential- oder Remote-Zugriff und keine Write-, Commit-,
+Push- oder Tag-Operation ausgeführt.
+
+Sanitisierter Report:
+
+```text
+exports/WF-0012_local-read-only-test-report_LRT-002_2026-08-09.json
+```
+
+Der Dokumentvertrag und der veröffentlichte Workflow-Export bleiben
+`v0.1.1/released`.
