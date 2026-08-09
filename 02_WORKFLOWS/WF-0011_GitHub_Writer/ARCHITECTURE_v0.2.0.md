@@ -54,6 +54,8 @@ Genau ein Eingangsauftrag
 Genau ein End-Item
 Deterministische Fehlerpriorität
 Explizite Allowlist
+Lesender lokaler Repository-Preflight
+Harte, dauerhaft geschlossene Schreibgrenze
 Keine impliziten Standardwerte
 Keine Credentials
 Keine externen Aufrufe
@@ -79,6 +81,10 @@ WF-0011 ist nicht verantwortlich für:
 - das Pushen eines Commits,
 - die Aktivierung anderer Workflows,
 - die Benachrichtigung von Personen oder Systemen.
+
+WF-0011 v0.2.0 plant ausschließlich die lesende Prüfung eines
+vorkonfigurierten lokalen Repositorys. Diese Prüfung ist keine Freigabe zum
+Schreiben und noch nicht technisch implementiert.
 
 Die Controller-Herkunft wird ausschließlich anhand der übergebenen Daten geprüft.
 
@@ -178,12 +184,14 @@ Die Architektur besteht aus folgenden logischen Schichten:
 2. Input Envelope
 3. Schema Validation
 4. Policy Validation
-5. Canonicalization
-6. Patch Simulation
-7. Patch Guard
-8. Result Builder
-9. Output Sanitizer
-10. Single Output Boundary
+5. Repository Preflight Boundary
+6. Canonicalization
+7. Patch Simulation
+8. Patch Guard
+9. Closed Write Boundary
+10. Result Builder
+11. Output Sanitizer
+12. Single Output Boundary
 ```
 
 Jede Schicht besitzt eine klar begrenzte Verantwortung.
@@ -196,9 +204,11 @@ Jede Schicht besitzt eine klar begrenzte Verantwortung.
 Manual Input
 → Input Boundary
 → Validation Pipeline
+→ Read-only Repository Preflight
 → Canonical Request Builder
 → Patch Simulation
 → Patch Guard
+→ Closed Write Boundary
 → Result Builder
 → Output Sanitizer
 → Single End Item
@@ -353,6 +363,16 @@ Eine unabhängige Vermischung freigegebener Einzelwerte ist nicht vorgesehen.
 
 Die Allowlist ist im Workflow statisch definiert.
 
+Zusätzlich gilt eine getrennte, statische Zielpfad-Allowlist. Für den
+v0.2.0-Entwurf ist ausschließlich der simulationsbezogene Testpfad
+
+```text
+02_WORKFLOWS/WF-0011_GitHub_Writer/README.md
+```
+
+vorgesehen. Diese Regel erteilt keine Schreibfreigabe. Syntaktisch sichere,
+aber nicht gelistete Pfade werden mit `TARGET_PATH_NOT_ALLOWED` abgelehnt.
+
 Sie wird nicht aus:
 
 - Umgebungsvariablen,
@@ -398,6 +418,56 @@ Die Architektur muss insbesondere erkennen und ablehnen:
 
 Der normalisierte Pfad wird erst nach bestandener Sicherheitsprüfung in den kanonischen Auftrag übernommen.
 
+Anschließend wird der Pfad exakt gegen die Zielpfad-Allowlist geprüft. Die
+Allowlist-Prüfung findet statt, bevor der lokale Repository-Preflight aufgerufen
+werden darf.
+
+---
+
+## 16.1 Repository-Preflight-Architektur
+
+Der Repository-Preflight ist eine eigene Vertrauensgrenze. Er erhält weder den
+Dateiinhalt noch die Commit-Nachricht noch Credentials. Er prüft ausschließlich
+ein vorkonfiguriertes lokales Ziel und liefert intern nur feste boolesche
+Prüfwerte beziehungsweise einen kontrollierten Fehlercode.
+
+Verbindlich zu prüfen sind:
+
+```text
+is_git_repository = true
+repository_identity_matches = true
+current_branch = main
+working_tree_clean = true
+```
+
+`working_tree_clean = true` bedeutet: keine vorgemerkten, nicht vorgemerkten
+oder unversionierten Änderungen. Der Repository-Pfad wird nicht aus
+`target.path` oder einem anderen Eingangsfeld gebildet.
+
+Der Adapter darf keine Datei verändern, keinen Git-Index aktualisieren, keine
+Locks oder Hooks erzeugen, kein Netzwerk verwenden und weder rohe Standardaus-
+noch Standardfehlerdaten weitergeben. Der konkrete n8n-kompatible Adapter ist
+noch nicht entschieden. Bis zu seinem Konformitätsnachweis bleibt die
+Implementierung `not-started`.
+
+---
+
+## 16.2 Geschlossene Write Boundary
+
+Nach erfolgreicher Patch-Validierung folgt eine zentrale Write Boundary. Für
+v0.2.0 ist sie konstant geschlossen:
+
+```text
+write_allowed = false
+commit_allowed = false
+push_allowed = false
+```
+
+Es existiert kein ausführender Zweig hinter dieser Grenze. Validierung,
+kanonische Vorbereitung und In-Memory-Simulation sind zulässig. Dateiänderung,
+Commit und Push sind verboten. Jeder Schreibwunsch oder Umgehungsversuch wird
+mit `WRITE_NOT_ALLOWED` abgelehnt.
+
 ---
 
 ## 17. Referenzarchitektur
@@ -410,9 +480,10 @@ target.ref = main
 
 Branches, Tags, Commit-Referenzen oder dynamische Refs werden nicht unterstützt.
 
-Die Prüfung erfolgt rein lokal gegen den übergebenen String.
-
-Es findet kein Git- oder GitHub-Abgleich statt.
+Die Eingangsprüfung erfolgt zunächst exakt gegen den übergebenen String. Der
+spätere lokale Repository-Preflight bestätigt zusätzlich ausschließlich
+lesend, dass der aktuelle lokale Branch `main` ist. Es findet kein GitHub-
+Abgleich und keine Änderung des Repositorys statt.
 
 ---
 
@@ -520,6 +591,11 @@ Zu den zu schützenden Mustern gehören insbesondere:
 Verdächtige Werte dürfen nicht in das öffentliche Ergebnis kopiert werden.
 
 Die Ablehnung darf den gefundenen Geheimwert nicht wiederholen.
+
+Preflight-Adapter und Fehlerbehandlung dürfen lokale Repository-Pfade, rohe
+Git-Ausgaben, Standardausgaben oder Standardfehler nicht in das interne
+Workflow-Envelope übernehmen. Der Output Sanitizer baut öffentliche Ergebnisse
+und Exporte ausschließlich aus festen Feld-Allowlists neu auf.
 
 ---
 
@@ -815,6 +891,11 @@ Grundsätzlich zulässig:
 - seiteneffektfreie Kontrollfluss-Nodes,
 - seiteneffektfreie Merge-Funktionen, falls der Flow sie eindeutig benötigt.
 
+Zusätzlich geplant, aber noch nicht technisch freigegeben, ist genau ein
+gekapselter Repository-Preflight-Adapter. Er darf ausschließlich die in
+Abschnitt 16.1 definierten lesenden Prüfwerte liefern. Seine konkrete n8n-
+Umsetzung bleibt bis zu einem gesonderten Sicherheitsnachweis offen.
+
 Code-Nodes dürfen ausschließlich:
 
 - JSON-Daten lesen,
@@ -835,9 +916,10 @@ Nicht zulässig sind insbesondere:
 
 - GitHub-Nodes,
 - HTTP-Request-Nodes,
-- Execute-Command-Nodes,
+- nicht ausdrücklich als konformer lesender Preflight-Adapter freigegebene
+  Execute-Command-Nodes,
 - SSH-Nodes,
-- Git-Nodes,
+- Git-Nodes mit Netzwerk- oder Mutationsfähigkeit,
 - Datei-Schreibnodes,
 - Datei-Löschnodes,
 - Datenbank-Schreibnodes,
@@ -849,8 +931,8 @@ Nicht zulässig sind insbesondere:
 - Community-Nodes mit ungeklärtem Verhalten,
 - AI-Nodes mit externem Modellaufruf,
 - Code mit Netzwerkzugriff,
-- Code mit Dateisystemzugriff,
-- Code mit Prozess- oder Systemzugriff.
+- Code mit schreibendem Dateisystemzugriff,
+- Code mit nicht freigegebenem Prozess- oder Systemzugriff.
 
 ---
 
@@ -867,16 +949,16 @@ https
 net
 tls
 dns
-fs
-child_process
-process execution
-shell commands
+schreibende fs-Funktionen
+mutierende child_process-Aufrufe
+mutierende process execution
+mutierende shell commands
 database clients
 credential APIs
 workflow execution APIs
 ```
 
-Auch indirekte oder dynamisch geladene Varianten dieser Zugriffe sind verboten.
+Auch indirekte oder dynamisch geladene Varianten dieser verbotenen Zugriffe sind verboten.
 
 Code darf keine Seiteneffekte außerhalb des aktuellen In-Memory-Verarbeitungszustands erzeugen.
 
@@ -962,6 +1044,11 @@ Vor dem Statuswechsel zu `testing` müssen deshalb geprüft werden:
 - automatische Löschung,
 - Zugriffsrechte auf Ausführungsdaten.
 
+Zusätzlich muss der Preflight-Nachweis bestätigen, dass lokale Pfade, rohe
+Git-Ausgaben sowie Standardaus- und Standardfehler weder in n8n-Logs noch in
+Ausführungsdaten oder Exporte gelangen. Der Output Sanitizer allein reicht für
+diese Plattformgrenze nicht aus.
+
 Bis zur dokumentierten Klärung sind ausschließlich künstliche und nicht vertrauliche Testdaten zulässig.
 
 ---
@@ -973,10 +1060,15 @@ Die Seiteneffektfreiheit wird auf vier Ebenen nachgewiesen:
 ### 39.1 Komponentenebene
 
 Es sind keine Nodes mit externen Schreib- oder Netzwerkfähigkeiten enthalten.
+Der einzige geplante lokale Zugriff ist der gekapselte lesende
+Repository-Preflight.
 
 ### 39.2 Codeebene
 
-Code greift weder auf Netzwerk, Dateisystem, Prozesse, Git noch externe Systeme zu.
+Code greift nicht auf Netzwerk oder externe Systeme zu und führt keine
+Dateiänderung oder mutierende Git-, Prozess- oder Systemoperation aus. Der
+Repository-Preflight darf ausschließlich nach separatem Konformitätsnachweis
+lesend auf den vorkonfigurierten lokalen Repository-Zustand zugreifen.
 
 ### 39.3 Datenebene
 
@@ -1008,8 +1100,10 @@ Die Architektur unterscheidet vier Vertrauenszonen:
 ```text
 Zone 1: ungeprüfter Eingang
 Zone 2: geprüfte Einzelwerte
-Zone 3: kanonischer interner Auftrag und simuliertes Patch
-Zone 4: bereinigtes öffentliches Ergebnis
+Zone 3: bereinigtes Ergebnis des lokalen Repository-Preflights
+Zone 4: kanonischer interner Auftrag und simuliertes Patch
+Zone 5: dauerhaft geschlossene Write Boundary
+Zone 6: bereinigtes öffentliches Ergebnis
 ```
 
 Daten dürfen nur nach bestandener Prüfung in die nächste Zone übernommen werden.
@@ -1056,6 +1150,10 @@ Freigabe: manual_review
 Owner: Jamoko112026
 Repository: JaMoKo_Automation_OS
 Ref: main
+Test-Zielpfad-Allowlist: 02_WORKFLOWS/WF-0011_GitHub_Writer/README.md
+Repository-Preflight: read-only, planned, not implemented
+Working Tree: clean erforderlich
+Write Boundary: dauerhaft geschlossen
 Content-Encoding intern: utf-8
 Maximale Inhaltsgröße: 100000 UTF-8-Bytes
 Maximale Commit-Nachricht: 120 Zeichen
@@ -1098,7 +1196,7 @@ Die technische Prüfung wird sofort abgebrochen, wenn:
 - ein Credential eingebunden ist,
 - ein automatischer Trigger aktiv ist,
 - ein anderer Workflow gestartet wird,
-- Code auf Datei- oder Systemfunktionen zugreift,
+- Code auf nicht freigegebene oder mutierende Datei-, Git-, Prozess- oder Systemfunktionen zugreift,
 - der Sanitizer umgangen wird,
 - ein roher technischer Fehler ausgegeben wird,
 - nicht genau ein End-Item entsteht.
@@ -1128,6 +1226,8 @@ Die Architektur gilt als umsetzungsbereit, wenn:
 - keine Credentials vorgesehen sind,
 - die Fehlerpriorität deterministisch umsetzbar ist,
 - Patch-Simulation und Patch Guard getrennt sind,
+- ein konformer lesender Repository-Preflight separat nachgewiesen ist,
+- die Write Boundary dauerhaft geschlossen und nicht umgehbar ist,
 - die vier Seiteneffektwerte immer `false` bleiben,
 - die Prüfung der n8n-Datenhaltung dokumentiert ist.
 
@@ -1146,6 +1246,7 @@ Workflow active: false
 Credentials: forbidden
 GitHub access: forbidden
 Network access: forbidden
+Read-only local repository preflight: planned, not implemented
 File changes: forbidden
 Commits: forbidden
 Pushes: forbidden
@@ -1163,6 +1264,7 @@ ARCHITECTURE_v0.2.0.md,
 FLOW_v0.2.0.md und
 TESTS_v0.2.0.md gemeinsam auf Widersprüche prüfen.
 
-Erst nach bestandenem Dokumentationsabgleich darf der
+Anschließend muss der ausschließlich lesende Repository-Preflight technisch
+evaluiert werden. Erst nach seinem dokumentierten Konformitätsnachweis darf der
 inaktive n8n-Workflow WF-0011 v0.2.0 angelegt werden.
 ```

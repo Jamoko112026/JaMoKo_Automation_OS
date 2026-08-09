@@ -268,6 +268,24 @@ Stand v0.1.0. Die Dateien `SPECIFICATION_v0.2.0.md`,
 einen Entwurf. Dieser Entwurf ist nicht implementiert und besitzt keinen
 Workflow-Export.
 
+### Planungsgrenze v0.2.0
+
+Der v0.2.0-Entwurf plant zusätzlich:
+
+- eine statische Owner-, Repository- und Zielpfad-Allowlist,
+- einen separat nachzuweisenden, ausschließlich lesenden lokalen
+  Repository-Preflight für gültiges Git-Repository, Branch `main` und sauberen
+  Working Tree,
+- einen zentralen Output- und Fehler-Sanitizer,
+- eine dauerhaft geschlossene Write Boundary.
+
+v0.2.0 darf Aufträge validieren, intern kanonisch vorbereiten und einen
+Vollinhalt-Patch ausschließlich im Speicher simulieren. Dateiänderungen,
+Commits, Pushes, Credentials, HTTP- und GitHub-Zugriffe bleiben verboten. Der
+Repository-Preflight ist noch nicht technisch umgesetzt; sein n8n-kompatibler
+Mechanismus und der Nachweis sicherer Logging- und Ausführungsdateneinstellungen
+sind offen.
+
 ---
 
 ## Nächster Schritt

@@ -208,3 +208,31 @@ Die aufgeführten Einschränkungen entsprechen überwiegend dem bewusst begrenzt
 
 Der n8n-Export liegt im vorgesehenen Exportordner. Aussagen zu visuellen
 Nachweisen ersetzen keinen reproduzierbaren Runtime-Nachweis.
+
+---
+
+## Offene Planungsgrenzen für v0.2.0
+
+Die folgenden Punkte gehören ausschließlich zum nicht implementierten
+v0.2.0-Entwurf und verändern den veröffentlichten v0.1.0-Stand nicht:
+
+### KI-V02-001 – Repository-Preflight technisch offen
+
+Der Entwurf verlangt eine ausschließlich lesende lokale Prüfung auf gültiges
+Git-Repository, Branch `main` und sauberen Working Tree. Ein n8n-kompatibler
+Adapter, der dabei weder Repository-Zustand noch Logs oder Ausführungsdaten
+unsicher verändert, ist noch nicht ausgewählt oder nachgewiesen.
+
+### KI-V02-002 – Logging- und Ausführungsdatengrenze offen
+
+Ein Output Sanitizer kann öffentliche Endergebnisse und Exporte begrenzen,
+garantiert aber allein nicht, dass n8n interne Eingaben, Adapterfehler oder
+Zwischenergebnisse nicht speichert. Bis zur Prüfung der Plattformkonfiguration
+dürfen keine Tokens, Secrets oder produktiven Inhalte verwendet werden.
+
+### KI-V02-003 – Keine produktive Pfad- oder Schreibfreigabe
+
+Die v0.2.0-Zielpfad-Allowlist enthält ausschließlich einen kontrollierten
+Simulationspfad. Das dauerhaft geschlossene Write-Gate besitzt keine
+Ausführungsroute. Eine produktive Pfadfreigabe oder Write-, Commit- oder
+Push-Funktion ist nicht beschlossen.

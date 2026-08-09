@@ -112,6 +112,7 @@ WF-0011 v0.2.0 wird in folgenden Bereichen geprüft:
 18. Credential- und Exporttests
 19. n8n-Datenhaltungstests
 20. End-to-End-Tests
+21. Zielpfad-, Repository-Preflight- und Write-Gate-Tests
 
 ---
 
@@ -125,7 +126,7 @@ Soweit ein Testfall keine Abweichung definiert, wird dieser Basisauftrag verwend
   "target": {
     "owner": "Jamoko112026",
     "repository": "JaMoKo_Automation_OS",
-    "path": "test-fixtures/controller-target.md",
+    "path": "02_WORKFLOWS/WF-0011_GitHub_Writer/README.md",
     "ref": "main"
   },
   "source": {
@@ -169,7 +170,7 @@ Der Basisauftrag muss zu genau einem bereinigten n8n-Item führen:
   "target": {
     "owner": "Jamoko112026",
     "repository": "JaMoKo_Automation_OS",
-    "path": "test-fixtures/controller-target.md",
+    "path": "02_WORKFLOWS/WF-0011_GitHub_Writer/README.md",
     "ref": "main"
   },
   "source": {
@@ -221,7 +222,8 @@ Für jeden Test gilt:
 4. Es werden keine produktiven Inhalte eingesetzt.
 5. Es werden keine Credentials eingebunden.
 6. Es wird keine GitHub-API aufgerufen.
-7. Es wird keine Datei gelesen oder geschrieben.
+7. Es wird keine Datei verändert; ausschließlich der gesondert nachzuweisende
+   lokale Repository-Preflight darf Repository-Metadaten lesen.
 8. Es wird kein Commit erzeugt.
 9. Es wird kein Push ausgeführt.
 10. Das Endergebnis wird vollständig geprüft.
@@ -346,11 +348,16 @@ Folgende Nodes sind vollständig vorhanden:
 30_SECURITY_VALIDATOR
 40_DECISION_ENGINE_INITIAL
 41_ROUTE_INITIAL_DECISION
+45_REPOSITORY_PREFLIGHT
+46_DECISION_ENGINE_PREFLIGHT
+47_ROUTE_PREFLIGHT_DECISION
 50_CANONICAL_REQUEST
 51_PATCH_SIMULATOR
 60_PATCH_VALIDATOR
 61_DECISION_ENGINE_PATCH
 62_ROUTE_PATCH_DECISION
+65_WRITE_BOUNDARY_GATE
+66_ROUTE_WRITE_BOUNDARY
 70_REJECTION_BUILDER
 71_SUCCESS_BUILDER
 80_OUTPUT_SANITIZER
@@ -360,7 +367,7 @@ Folgende Nodes sind vollständig vorhanden:
 ### Erwartung
 
 ```text
-16 von 16 Nodes vorhanden
+21 von 21 Nodes vorhanden
 ```
 
 ### Ergebnis
@@ -427,7 +434,7 @@ Der Workflow enthält keine:
 ```text
 GitHub Write Nodes
 HTTP Write Requests an GitHub
-Execute Command Nodes
+Nicht als konformer read-only Preflight freigegebene Execute Command Nodes
 Read/Write Files from Disk Nodes
 FTP-, SFTP- oder SSH-Schreibnodes
 Execute Workflow Nodes zu schreibenden Workflows
@@ -466,11 +473,16 @@ Sicherer Basis-Testauftrag aus Abschnitt 5.
 -> 30_SECURITY_VALIDATOR
 -> 40_DECISION_ENGINE_INITIAL
 -> 41_ROUTE_INITIAL_DECISION
+-> 45_REPOSITORY_PREFLIGHT
+-> 46_DECISION_ENGINE_PREFLIGHT
+-> 47_ROUTE_PREFLIGHT_DECISION
 -> 50_CANONICAL_REQUEST
 -> 51_PATCH_SIMULATOR
 -> 60_PATCH_VALIDATOR
 -> 61_DECISION_ENGINE_PATCH
 -> 62_ROUTE_PATCH_DECISION
+-> 65_WRITE_BOUNDARY_GATE
+-> 66_ROUTE_WRITE_BOUNDARY
 -> 71_SUCCESS_BUILDER
 -> 80_OUTPUT_SANITIZER
 -> 90_FINAL_OUTPUT
@@ -1220,7 +1232,7 @@ not-run
 ### Wert
 
 ```text
-test-fixtures/controller-target.md
+02_WORKFLOWS/WF-0011_GitHub_Writer/README.md
 ```
 
 ### Erwartung
@@ -2739,7 +2751,7 @@ Gültiger Basisauftrag.
 ### Erwartung intern
 
 ```text
-patch.target_path = test-fixtures/controller-target.md
+patch.target_path = 02_WORKFLOWS/WF-0011_GitHub_Writer/README.md
 ```
 
 ### Ergebnis
@@ -3315,7 +3327,8 @@ not-run
 
 ### Durchführung
 
-Der identische Basisauftrag wird dreimal manuell ausgeführt.
+Der identische Basisauftrag wird bei unverändertem, sauberem lokalen
+Repository-Preflight-Zustand dreimal manuell ausgeführt.
 
 ### Erwartung
 
@@ -3491,16 +3504,17 @@ not-run
 
 ---
 
-## T-SEF-006 – Kein Shell-Befehl
+## T-SEF-006 – Keine mutierende Git-/Shell-/Systemausführung
 
 ### Prüfung
 
-Es wird kein Shell- oder Systembefehl ausgeführt.
+Es wird kein mutierender oder nicht ausdrücklich für den lesenden
+Repository-Preflight freigegebener Git-, Shell- oder Systembefehl ausgeführt.
 
 ### Erwartung
 
 ```text
-0 Shell-Ausführungen
+0 mutierende oder nicht freigegebene Git-/Shell-/Systemausführungen
 ```
 
 ### Ergebnis
@@ -3743,6 +3757,8 @@ Gültiger Basisauftrag.
 status = simulated
 End-Items = 1
 Patch Simulator erreicht
+Repository Preflight erreicht und ausschließlich read-only
+Write Boundary erreicht und geschlossen
 Success Builder erreicht
 Rejection Builder nicht erreicht
 Sanitizer erreicht
@@ -3800,6 +3816,7 @@ status = rejected
 error_code = PATCH_VALIDATION_FAILED
 Patch Simulator erreicht
 Patch Validator erreicht
+Write Boundary nicht erreicht
 Success Builder nicht erreicht
 Rejection Builder erreicht
 Sanitizer erreicht
@@ -3854,7 +3871,9 @@ Folgende Wege werden einzeln ausgeführt:
 Erfolg
 Schema-Ablehnung
 Sicherheitsablehnung
+Repository-Preflight-Ablehnung
 Patch-Ablehnung
+Write-Gate-Ablehnung
 interner Fehler
 ```
 
@@ -3877,6 +3896,283 @@ not-run
 
 ---
 
+# U. Zielpfad-, Repository-Preflight- und Write-Gate-Tests
+
+Alle Fälle dieses Abschnitts sind Planfälle. Sie sind nicht ausgeführt und
+dürfen erst nach Freigabe eines nachweislich lesenden Repository-Preflight-
+Adapters umgesetzt werden.
+
+## T-PAL-001 – Simulationspfad steht in der Zielpfad-Allowlist
+
+### Eingang
+
+Der Basisauftrag verwendet exakt:
+
+```text
+02_WORKFLOWS/WF-0011_GitHub_Writer/README.md
+```
+
+### Erwartung
+
+```text
+Pfadsicherheit bestanden
+Zielpfad-Allowlist bestanden
+keine Schreibfreigabe erteilt
+```
+
+### Ergebnis
+
+```text
+not-run
+```
+
+---
+
+## T-PAL-002 – Sicherer, aber nicht freigegebener Zielpfad
+
+### Änderung
+
+```text
+target.path = 02_WORKFLOWS/WF-0011_GitHub_Writer/ARCHITECTURE.md
+```
+
+### Erwartung
+
+```text
+status = rejected
+error_code = TARGET_PATH_NOT_ALLOWED
+Repository-Preflight nicht aufgerufen
+```
+
+### Ergebnis
+
+```text
+not-run
+```
+
+---
+
+## T-RPF-001 – Gültiges Repository und sauberer Working Tree
+
+### Vorbedingung
+
+Ein isolierter, künstlicher lokaler Test-Checkout entspricht der statischen
+Repository-Allowlist, befindet sich auf `main` und enthält weder staged noch
+unstaged noch unversionierte Änderungen.
+
+### Erwartung
+
+```text
+Preflight bestanden
+Repository unverändert
+0 Netzwerkaufrufe
+Weiterleitung zur kanonischen Vorbereitung
+```
+
+### Ergebnis
+
+```text
+not-run
+```
+
+---
+
+## T-RPF-002 – Lokales Ziel ist kein Git-Repository
+
+### Erwartung
+
+```text
+status = rejected
+error_code = REPOSITORY_INVALID
+keine lokalen Pfade oder Adapterausgaben im Ergebnis
+```
+
+### Ergebnis
+
+```text
+not-run
+```
+
+---
+
+## T-RPF-003 – Working Tree enthält staged Änderungen
+
+### Erwartung
+
+```text
+status = rejected
+error_code = WORKTREE_NOT_CLEAN
+keine Patch-Simulation
+```
+
+### Ergebnis
+
+```text
+not-run
+```
+
+---
+
+## T-RPF-004 – Working Tree enthält unstaged Änderungen
+
+### Erwartung
+
+```text
+status = rejected
+error_code = WORKTREE_NOT_CLEAN
+keine Patch-Simulation
+```
+
+### Ergebnis
+
+```text
+not-run
+```
+
+---
+
+## T-RPF-005 – Working Tree enthält unversionierte Dateien
+
+### Erwartung
+
+```text
+status = rejected
+error_code = WORKTREE_NOT_CLEAN
+keine Patch-Simulation
+```
+
+### Ergebnis
+
+```text
+not-run
+```
+
+---
+
+## T-RPF-006 – Unerwarteter Preflight-Fehler
+
+### Durchführung
+
+Ein künstlicher Adapterfehler mit Testpfad, stdout, stderr, Stacktrace und
+Secret-Marker wird vor dem Rejection Builder ausgelöst.
+
+### Erwartung
+
+```text
+status = rejected
+error_code = REPOSITORY_PREFLIGHT_FAILED
+statische Meldung
+kein Testpfad
+kein stdout oder stderr
+kein Stacktrace
+kein Secret-Marker in Output, gespeichertem Testlog oder Export
+```
+
+### Ergebnis
+
+```text
+not-run
+```
+
+---
+
+## T-WGT-001 – Zulässige Simulation endet am geschlossenen Write-Gate
+
+### Erwartung
+
+```text
+status = simulated
+write_allowed = false
+commit_allowed = false
+push_allowed = false
+file_changed = false
+write_executed = false
+commit_created = false
+push_executed = false
+```
+
+### Ergebnis
+
+```text
+not-run
+```
+
+---
+
+## T-WGT-002 – Eingangsmodus fordert Write an
+
+### Änderung
+
+```text
+execution.mode = write
+```
+
+### Erwartung
+
+```text
+status = rejected
+error_code = INVALID_MODE
+Repository-Preflight nicht aufgerufen
+Write-Gate nicht umgangen
+```
+
+### Ergebnis
+
+```text
+not-run
+```
+
+---
+
+## T-WGT-003 – Manipulierter interner Schreibwunsch
+
+### Manipulation
+
+Vor der Write Boundary wird kontrolliert ein interner Wert
+`write_allowed = true` gesetzt.
+
+### Erwartung
+
+```text
+status = rejected
+error_code = WRITE_NOT_ALLOWED
+0 Dateiänderungen
+0 Commits
+0 Pushes
+```
+
+### Ergebnis
+
+```text
+not-run
+```
+
+---
+
+## T-WGT-004 – Keine ausführende Route hinter der Write Boundary
+
+### Prüfung
+
+Knoten, Verbindungen und Export werden strukturell geprüft.
+
+### Erwartung
+
+```text
+0 Write-Nodes
+0 Commit-Nodes
+0 Push-Nodes
+0 GitHub-/HTTP-Nodes
+0 ausführende Verbindungen hinter 65_WRITE_BOUNDARY_GATE
+```
+
+### Ergebnis
+
+```text
+not-run
+```
+
+---
+
 ## 9. Verbindliche Fehlercodes
 
 Folgende Fehlercodes müssen durch mindestens einen Test abgedeckt sein:
@@ -3890,6 +4186,7 @@ INVALID_CONTROLLER_SOURCE
 CONTROLLER_NOT_PREPARED
 AUDIT_NOT_PASSED
 TARGET_NOT_ALLOWED
+TARGET_PATH_NOT_ALLOWED
 INVALID_PATH
 INVALID_REF
 SOURCE_SHA_MISSING
@@ -3897,7 +4194,11 @@ INVALID_SOURCE_SHA
 INVALID_CONTENT
 CONTENT_TOO_LARGE
 INVALID_COMMIT_MESSAGE
+REPOSITORY_INVALID
+WORKTREE_NOT_CLEAN
+REPOSITORY_PREFLIGHT_FAILED
 PATCH_VALIDATION_FAILED
+WRITE_NOT_ALLOWED
 INTERNAL_ERROR
 ```
 
@@ -3934,6 +4235,10 @@ keine Credentials
 Basisauftrag erfolgreich
 alle Fehlercodes technisch erreichbar
 Pfadsicherheitstests vorbereitet
+Zielpfad-Allowlisttests vorbereitet
+Repository-Preflight-Adapter separat freigegeben
+Working-Tree-Tests vorbereitet
+Write-Gate strukturell geschlossen
 Sanitizer auf allen Wegen verbunden
 Seiteneffektfreiheit technisch nachvollziehbar
 n8n-Datenhaltung geprüft
@@ -3952,6 +4257,10 @@ Vor dem Gesamtstatus `passed` müssen:
 - alle Fehlercodes reproduzierbar sein,
 - die Fehlerpriorität bestätigt sein,
 - alle Pfadsicherheitstests bestanden sein,
+- die Zielpfad-Allowlist exakt geprüft sein,
+- gültiges Repository sowie staged, unstaged und unversionierte Änderungen
+  durch den lesenden Preflight geprüft sein,
+- die Write Boundary in allen Fällen geschlossen und nicht umgehbar sein,
 - alle Grenzwerttests bestanden sein,
 - der Sanitizer keine internen Daten ausgeben,
 - genau ein End-Item entstehen,
@@ -3977,6 +4286,7 @@ ein Credential eingebunden ist
 ein Token oder Secret sichtbar wird
 ein automatischer Trigger aktiv ist
 ein anderer Workflow automatisch gestartet wird
+ein nicht freigegebener oder mutierender Git-/Shell-/Systemzugriff erfolgt
 der Sanitizer umgangen wird
 ein technischer Fehler ungefiltert ausgegeben wird
 ```
@@ -4012,6 +4322,9 @@ End-to-End-Erfolg:
 Fehlerpriorität bestätigt:
 Pfadsicherheit bestätigt:
 Sanitizer bestätigt:
+Repository-Preflight read-only bestätigt:
+Working-Tree-Prüfung bestätigt:
+Write Boundary geschlossen:
 Seiteneffektfreiheit bestätigt:
 Credentials im Export:
 Verbotene Nodes:
@@ -4033,6 +4346,10 @@ Notizen:
 - jeder Fehlercode reproduzierbar ausgelöst werden kann,
 - die Fehlerpriorität exakt eingehalten wird,
 - gefährliche und mehrdeutige Pfade abgelehnt werden,
+- nur statisch freigegebene Zielpfade die Simulation erreichen,
+- der Repository-Preflight ausschließlich lesend ein gültiges Repository,
+  `main` und einen sauberen Working Tree bestätigt,
+- die Write Boundary dauerhaft geschlossen bleibt,
 - Inhalts- und Nachrichtenlimits korrekt greifen,
 - manipulierte Patch-Metadaten abgelehnt werden,
 - alle Ergebnisse den Output Sanitizer durchlaufen,
@@ -4056,6 +4373,7 @@ Status: draft
 Mode: simulation
 Test specification: defined
 Implementation: not-started
+Repository preflight: planned, implementation mechanism open
 Tests executed: 0
 Tests passed: 0
 Tests failed: 0
@@ -4073,6 +4391,7 @@ Die Dokumente SPECIFICATION_v0.2.0.md,
 ARCHITECTURE_v0.2.0.md, FLOW_v0.2.0.md und
 TESTS_v0.2.0.md gemeinsam auf Widersprüche prüfen.
 
-Erst nach bestandenem Dokumentationsabgleich darf der
+Anschließend muss der ausschließlich lesende Repository-Preflight technisch
+evaluiert werden. Erst nach seinem dokumentierten Konformitätsnachweis darf der
 inaktive n8n-Workflow WF-0011 v0.2.0 angelegt werden.
 ```

@@ -85,7 +85,15 @@ Kein Node darf diese Werte aus der Eingabe übernehmen oder auf `true` setzen.
         +---------------- rejected ----------------+
         |                                          |
         v                                          v
-50_CANONICAL_REQUEST                      70_REJECTION_BUILDER
+45_REPOSITORY_PREFLIGHT                   70_REJECTION_BUILDER
+        |                                          |
+        v                                          |
+46_DECISION_ENGINE_PREFLIGHT                       |
+        |                                          |
+        +---------------- rejected ----------------+
+        |
+        v
+50_CANONICAL_REQUEST                               |
         |                                          |
         v                                          |
 51_PATCH_SIMULATOR                                 |
@@ -96,6 +104,11 @@ Kein Node darf diese Werte aus der Eingabe übernehmen oder auf `true` setzen.
         v                                          |
 61_DECISION_ENGINE_PATCH                           |
         |                                          |
+        +----------- rejected ---------------------+
+        |
+        v
+65_WRITE_BOUNDARY_GATE
+        |
         +----------- rejected ---------------------+
         |
         v
@@ -125,15 +138,20 @@ Die technische Umsetzung darf mehrere n8n-Verbindungen verwenden. Die logische R
 | 5 | `30_SECURITY_VALIDATOR` | Code | Sicherheitsregeln und Grenzwerte prüfen |
 | 6 | `40_DECISION_ENGINE_INITIAL` | Code | ersten priorisierten Fehler bestimmen |
 | 7 | `41_ROUTE_INITIAL_DECISION` | IF | zwischen Simulation und Ablehnung verzweigen |
-| 8 | `50_CANONICAL_REQUEST` | Code | internes normalisiertes Auftragsobjekt erzeugen |
-| 9 | `51_PATCH_SIMULATOR` | Code | Simulationsplan für Dateiersatz erzeugen |
-| 10 | `60_PATCH_VALIDATOR` | Code | Simulationsplan validieren |
-| 11 | `61_DECISION_ENGINE_PATCH` | Code | Patch-Ergebnis entscheiden |
-| 12 | `62_ROUTE_PATCH_DECISION` | IF | zwischen Erfolg und Ablehnung verzweigen |
-| 13 | `70_REJECTION_BUILDER` | Code | standardisierte Ablehnung erzeugen |
-| 14 | `71_SUCCESS_BUILDER` | Code | standardisiertes Simulationsergebnis erzeugen |
-| 15 | `80_OUTPUT_SANITIZER` | Code | Ausgabe auf erlaubte Felder reduzieren |
-| 16 | `90_FINAL_OUTPUT` | Edit Fields / Code | genau ein Endergebnis ausgeben |
+| 8 | `45_REPOSITORY_PREFLIGHT` | noch festzulegen, ausschließlich read-only | lokales Git-Repository, Branch und sauberen Working Tree prüfen |
+| 9 | `46_DECISION_ENGINE_PREFLIGHT` | Code | bereinigtes Preflight-Ergebnis entscheiden |
+| 10 | `47_ROUTE_PREFLIGHT_DECISION` | IF | zwischen Vorbereitung und Ablehnung verzweigen |
+| 11 | `50_CANONICAL_REQUEST` | Code | internes normalisiertes Auftragsobjekt erzeugen |
+| 12 | `51_PATCH_SIMULATOR` | Code | Simulationsplan für Dateiersatz erzeugen |
+| 13 | `60_PATCH_VALIDATOR` | Code | Simulationsplan validieren |
+| 14 | `61_DECISION_ENGINE_PATCH` | Code | Patch-Ergebnis entscheiden |
+| 15 | `62_ROUTE_PATCH_DECISION` | IF | zwischen Write Boundary und Ablehnung verzweigen |
+| 16 | `65_WRITE_BOUNDARY_GATE` | Code | dauerhaft geschlossene Write-/Commit-/Push-Grenze erzwingen |
+| 17 | `66_ROUTE_WRITE_BOUNDARY` | IF | zwischen Simulationserfolg und Ablehnung verzweigen |
+| 18 | `70_REJECTION_BUILDER` | Code | standardisierte Ablehnung erzeugen |
+| 19 | `71_SUCCESS_BUILDER` | Code | standardisiertes Simulationsergebnis erzeugen |
+| 20 | `80_OUTPUT_SANITIZER` | Code | Ausgabe auf erlaubte Felder reduzieren |
+| 21 | `90_FINAL_OUTPUT` | Edit Fields / Code | genau ein Endergebnis ausgeben |
 
 ---
 
@@ -146,9 +164,9 @@ Für v0.2.0 gelten:
 10–19  Input Gate
 20–29  Schema
 30–39  Sicherheit
-40–49  erste Entscheidung
+40–49  erste Entscheidung und Repository-Preflight
 50–59  Simulation
-60–69  Patch-Prüfung
+60–69  Patch-Prüfung und geschlossene Write Boundary
 70–79  Ergebnisaufbau
 80–89  Bereinigung
 90–99  Endausgabe
@@ -222,7 +240,7 @@ Stellt genau einen kontrollierten Testauftrag bereit.
   "target": {
     "owner": "Jamoko112026",
     "repository": "JaMoKo_Automation_OS",
-    "path": "test-fixtures/controller-target.md",
+    "path": "02_WORKFLOWS/WF-0011_GitHub_Writer/README.md",
     "ref": "main"
   },
   "source": {
@@ -395,13 +413,14 @@ Der Node trifft noch nicht die öffentliche Gesamtentscheidung.
 2. Controller-Herkunft
 3. Controller-Status
 4. Auditstatus
-5. Ziel-Allowlist
+5. Owner-Repository-Allowlist
 6. Pfad
-7. Referenz
-8. SHA
-9. Inhalt
-10. Commit-Nachricht
-11. optionale Request-ID
+7. Zielpfad-Allowlist
+8. Referenz
+9. SHA
+10. Inhalt
+11. Commit-Nachricht
+12. optionale Request-ID
 
 ---
 
@@ -509,10 +528,10 @@ folder//file.md
 folder/./file.md
 ```
 
-### Zulässiges Beispiel
+### Zulässiges und allowlistfähiges Beispiel
 
 ```text
-test-fixtures/controller-target.md
+02_WORKFLOWS/WF-0011_GitHub_Writer/README.md
 ```
 
 Ein Fehler führt zu:
@@ -522,6 +541,18 @@ INVALID_PATH
 ```
 
 Der normalisierte Pfad wird separat als interner Prüfwert gespeichert.
+
+### Zielpfad-Allowlist
+
+Nach bestandener Pfadsicherheitsprüfung wird der normalisierte Pfad exakt gegen
+folgende simulationsbezogene Test-Allowlist geprüft:
+
+```text
+02_WORKFLOWS/WF-0011_GitHub_Writer/README.md
+```
+
+Andere syntaktisch sichere Pfade führen zu `TARGET_PATH_NOT_ALLOWED`. Die
+Allowlist erteilt keine Write-, Commit- oder Push-Freigabe.
 
 ---
 
@@ -659,7 +690,7 @@ Beispiel:
     "request_id_valid": true
   },
   "normalized": {
-    "path": "test-fixtures/controller-target.md",
+    "path": "02_WORKFLOWS/WF-0011_GitHub_Writer/README.md",
     "commit_message": "Update controller test fixture",
     "content_bytes": 22
   },
@@ -701,14 +732,19 @@ rejected
 7. `AUDIT_NOT_PASSED`
 8. `TARGET_NOT_ALLOWED`
 9. `INVALID_PATH`
-10. `INVALID_REF`
-11. `SOURCE_SHA_MISSING`
-12. `INVALID_SOURCE_SHA`
-13. `INVALID_CONTENT`
-14. `CONTENT_TOO_LARGE`
-15. `INVALID_COMMIT_MESSAGE`
-16. `PATCH_VALIDATION_FAILED`
-17. `INTERNAL_ERROR`
+10. `TARGET_PATH_NOT_ALLOWED`
+11. `INVALID_REF`
+12. `SOURCE_SHA_MISSING`
+13. `INVALID_SOURCE_SHA`
+14. `INVALID_CONTENT`
+15. `CONTENT_TOO_LARGE`
+16. `INVALID_COMMIT_MESSAGE`
+17. `REPOSITORY_INVALID`
+18. `WORKTREE_NOT_CLEAN`
+19. `REPOSITORY_PREFLIGHT_FAILED`
+20. `PATCH_VALIDATION_FAILED`
+21. `WRITE_NOT_ALLOWED`
+22. `INTERNAL_ERROR`
 
 ### Entscheidungsobjekt bei Annahme
 
@@ -770,6 +806,63 @@ Der IF-Node verändert keine Daten.
 
 ---
 
+## 22.1 `45_REPOSITORY_PREFLIGHT`
+
+### Status
+
+```text
+planned
+implementation mechanism: open
+```
+
+Der Preflight darf erst nach der vollständigen Eingangsentscheidung erreicht
+werden. Er erhält eine vorkonfigurierte lokale Repository-Referenz, nicht einen
+vom Auftrag gelieferten Dateisystempfad.
+
+Er prüft ausschließlich lesend:
+
+```text
+gültiges Git-Repository
+Repository-Identität entspricht der Owner-Repository-Allowlist
+aktueller Branch = main
+keine staged Änderungen
+keine unstaged Änderungen
+keine unversionierten Dateien
+```
+
+Er gibt intern ausschließlich feste Prüfflags oder genau einen der Codes
+`REPOSITORY_INVALID`, `WORKTREE_NOT_CLEAN` oder
+`REPOSITORY_PREFLIGHT_FAILED` weiter. Lokale Pfade, Git-Ausgaben, stdout,
+stderr, Tokens und Secrets dürfen nicht in Workflow-Daten übernommen werden.
+
+Der Preflight darf weder Locks oder Hooks erzeugen noch Index, Working Tree,
+Konfiguration oder Repository-Historie verändern und darf keinen Netzwerkzugriff
+ausführen. Der konkrete n8n-Node-Typ ist noch nicht freigegeben.
+
+---
+
+## 22.2 `46_DECISION_ENGINE_PREFLIGHT`
+
+Der Node akzeptiert nur ein vollständig positives, bereinigtes
+Preflight-Ergebnis. Andernfalls erzeugt er genau einen priorisierten
+Ablehnungszustand. Rohe Adapterfehler werden ausschließlich zu
+`REPOSITORY_PREFLIGHT_FAILED` oder bei nicht sicher klassifizierbaren Fehlern zu
+`INTERNAL_ERROR` reduziert.
+
+---
+
+## 22.3 `47_ROUTE_PREFLIGHT_DECISION`
+
+```text
+continue -> 50_CANONICAL_REQUEST
+rejected -> 70_REJECTION_BUILDER
+```
+
+Es gibt keinen direkten Pfad vom Preflight zu Simulation, Final Output oder
+einer ausführenden Komponente.
+
+---
+
 ## 23. `50_CANONICAL_REQUEST`
 
 ### Typ
@@ -790,7 +883,7 @@ Erzeugt ein neues internes, normalisiertes Auftragsobjekt.
   "target": {
     "owner": "Jamoko112026",
     "repository": "JaMoKo_Automation_OS",
-    "path": "test-fixtures/controller-target.md",
+    "path": "02_WORKFLOWS/WF-0011_GitHub_Writer/README.md",
     "ref": "main"
   },
   "source": {
@@ -823,7 +916,9 @@ Erzeugt ein neues internes, normalisiertes Auftragsobjekt.
 - Die getrimmte Commit-Nachricht wird verwendet.
 - Sicherheitsflags werden nicht aus der Eingabe übernommen.
 - Das Objekt bleibt intern.
-- Es wird keine Datei gelesen oder geschrieben.
+- Dieser Knoten liest oder schreibt keine Datei; der getrennte
+  Repository-Preflight verarbeitet ausschließlich seine bereinigten
+  read-only-Prüfwerte.
 
 ---
 
@@ -845,7 +940,7 @@ Erzeugt einen nicht angewendeten Simulationsplan für einen vollständigen Datei
 {
   "patch": {
     "patch_type": "full-file-replacement",
-    "target_path": "test-fixtures/controller-target.md",
+    "target_path": "02_WORKFLOWS/WF-0011_GitHub_Writer/README.md",
     "expected_sha": "0123456789abcdef0123456789abcdef01234567",
     "content_encoding": "utf-8",
     "content_bytes": 22,
@@ -987,7 +1082,7 @@ decision.status equals simulated
 Weiter zu:
 
 ```text
-71_SUCCESS_BUILDER
+65_WRITE_BOUNDARY_GATE
 ```
 
 ### False-Pfad
@@ -997,6 +1092,35 @@ Weiter zu:
 ```text
 70_REJECTION_BUILDER
 ```
+
+---
+
+## 27.1 `65_WRITE_BOUNDARY_GATE`
+
+Die Write Boundary ist in v0.2.0 dauerhaft geschlossen. Sie bestätigt für den
+normalen Simulationsweg ausschließlich:
+
+```text
+write_allowed = false
+commit_allowed = false
+push_allowed = false
+```
+
+Es existiert kein Ausführungszweig. Jede Eingabe oder interne Manipulation, die
+Write, Commit oder Push anfordert beziehungsweise einen dieser Werte auf `true`
+setzt, erzeugt `WRITE_NOT_ALLOWED`.
+
+---
+
+## 27.2 `66_ROUTE_WRITE_BOUNDARY`
+
+```text
+closed and safe -> 71_SUCCESS_BUILDER
+write intent or bypass -> 70_REJECTION_BUILDER
+```
+
+Die Bezeichnung `closed and safe` bedeutet ausschließlich, dass die Simulation
+ohne ausführende Wirkung beendet werden darf. Sie ist keine Schreibfreigabe.
 
 ---
 
@@ -1025,13 +1149,18 @@ Erzeugt für jeden Fehlercode eine einheitliche, sichere Ablehnung.
 | `AUDIT_NOT_PASSED` | Die vorgelagerte Prüfung wurde nicht bestanden. |
 | `TARGET_NOT_ALLOWED` | Owner und Repository sind nicht freigegeben. |
 | `INVALID_PATH` | Der Zielpfad ist ungültig oder unsicher. |
+| `TARGET_PATH_NOT_ALLOWED` | Der Zielpfad ist nicht für diese Simulation freigegeben. |
 | `INVALID_REF` | Die Zielreferenz ist nicht zulässig. |
 | `SOURCE_SHA_MISSING` | Der erwartete Ausgangs-SHA fehlt. |
 | `INVALID_SOURCE_SHA` | Der erwartete Ausgangs-SHA ist syntaktisch ungültig. |
 | `INVALID_CONTENT` | Der vorgesehene Dateiinhalt ist ungültig. |
 | `CONTENT_TOO_LARGE` | Der vorgesehene Dateiinhalt überschreitet das Größenlimit. |
 | `INVALID_COMMIT_MESSAGE` | Die vorgesehene Commit-Nachricht ist ungültig. |
+| `REPOSITORY_INVALID` | Das lokale Ziel ist kein freigegebenes Git-Repository. |
+| `WORKTREE_NOT_CLEAN` | Der lokale Repository-Arbeitsstand ist nicht sauber. |
+| `REPOSITORY_PREFLIGHT_FAILED` | Der lokale Repository-Zustand konnte nicht sicher geprüft werden. |
 | `PATCH_VALIDATION_FAILED` | Der simulierte Änderungspatch konnte nicht validiert werden. |
+| `WRITE_NOT_ALLOWED` | Write, Commit und Push sind in dieser Version nicht freigegeben. |
 | `INTERNAL_ERROR` | Die Simulation konnte nicht sicher abgeschlossen werden. |
 
 ### Internes Ergebnis
@@ -1080,7 +1209,7 @@ Erzeugt das standardisierte Simulationsergebnis.
   "target": {
     "owner": "Jamoko112026",
     "repository": "JaMoKo_Automation_OS",
-    "path": "test-fixtures/controller-target.md",
+    "path": "02_WORKFLOWS/WF-0011_GitHub_Writer/README.md",
     "ref": "main"
   },
   "source": {
@@ -1315,7 +1444,8 @@ Nicht zulässig sind Verbindungen von:
 - Rejection Builder direkt zum Final Output,
 - internen Datenpfaden an externe Workflows,
 - WF-0013 automatisch zu WF-0011,
-- WF-0011 zu einem GitHub-Schreibworkflow.
+- WF-0011 zu einem GitHub-Schreibworkflow,
+- `65_WRITE_BOUNDARY_GATE` zu einer Write-, Commit- oder Push-Komponente.
 
 Der Output Sanitizer darf niemals umgangen werden.
 
@@ -1328,7 +1458,8 @@ WF-0011 v0.2.0 darf nicht enthalten:
 - GitHub Write Nodes,
 - GitHub Create-or-Update-File Nodes,
 - HTTP Request Nodes mit `POST`, `PUT`, `PATCH` oder `DELETE` an GitHub,
-- Execute Command,
+- nicht ausdrücklich als konformer lesender Repository-Preflight freigegebene
+  Execute-Command- oder Prozess-Nodes,
 - Read/Write Files from Disk,
 - FTP-, SFTP- oder SSH-Schreiboperationen,
 - Execute Workflow zu schreibenden Workflows,
@@ -1338,6 +1469,10 @@ WF-0011 v0.2.0 darf nicht enthalten:
 - Credential-Test-Nodes mit Schreibzugriff.
 
 Erlaubt sind ausschließlich Nodes, die für manuellen Eingang, interne Verarbeitung und bereinigte Ausgabe erforderlich sind.
+
+Zusätzlich ist genau ein noch festzulegender Repository-Preflight-Adapter
+geplant. Er darf nur die dokumentierten read-only-Prüfflags liefern. Vor seinem
+separaten Konformitätsnachweis ist kein konkreter Node-Typ freigegeben.
 
 ---
 
@@ -1372,6 +1507,11 @@ Vor der Freigabe muss geprüft werden:
 4. Ob Fehlerausführungen rohe Node-Daten enthalten.
 5. Ob erfolgreiche Ausführungen interne Patch-Daten enthalten.
 6. Welche Einstellungen zur Speicherung erfolgreicher und fehlerhafter Ausführungen gelten.
+7. Ob lokale Repository-Pfade, Git-Ausgaben, stdout oder stderr gespeichert werden.
+8. Ob Tokens oder Secrets in Plattform-Logs oder Exporten erscheinen könnten.
+
+Der Output Sanitizer ersetzt diese Plattformprüfung nicht. Bis zu ihrem
+Nachweis dürfen ausschließlich künstliche Daten ohne Secrets verwendet werden.
 
 Bis diese Prüfung abgeschlossen ist, bleibt der Workflow:
 
@@ -1385,7 +1525,8 @@ Testinhalte dürfen deshalb keine vertraulichen Daten enthalten.
 
 ## 39. Determinismus
 
-Bei identischem Eingang muss WF-0011 v0.2.0 dasselbe fachliche Ergebnis erzeugen.
+Bei identischem Eingang und identischem, unverändertem Repository-Preflight-
+Zustand muss WF-0011 v0.2.0 dasselbe fachliche Ergebnis erzeugen.
 
 Nicht zulässig sind:
 
@@ -1403,7 +1544,8 @@ Die Fehlerpriorität wird ausschließlich durch die verbindliche Fehlerliste bes
 
 ## 40. Seiteneffektfreiheit
 
-Die Simulation darf ausschließlich interne n8n-Datenobjekte erzeugen.
+Abgesehen vom geplanten lesenden Repository-Preflight darf die Simulation
+ausschließlich interne n8n-Datenobjekte erzeugen.
 
 Zulässige Wirkung:
 
@@ -1423,8 +1565,11 @@ Branch erstellen
 Pull Request erstellen
 GitHub aufrufen
 anderen Workflow automatisch starten
-Shell-Befehl ausführen
+mutierenden oder nicht freigegebenen Git-/Shell-/Systembefehl ausführen
 ```
+
+Zulässig ist ausschließlich der geplante lesende Repository-Preflight nach
+separatem Konformitätsnachweis. Er darf den Repository-Zustand nicht verändern.
 
 ---
 
@@ -1440,11 +1585,16 @@ Der vollständige Erfolgsweg lautet:
 -> 30_SECURITY_VALIDATOR
 -> 40_DECISION_ENGINE_INITIAL
 -> 41_ROUTE_INITIAL_DECISION
+-> 45_REPOSITORY_PREFLIGHT
+-> 46_DECISION_ENGINE_PREFLIGHT
+-> 47_ROUTE_PREFLIGHT_DECISION
 -> 50_CANONICAL_REQUEST
 -> 51_PATCH_SIMULATOR
 -> 60_PATCH_VALIDATOR
 -> 61_DECISION_ENGINE_PATCH
 -> 62_ROUTE_PATCH_DECISION
+-> 65_WRITE_BOUNDARY_GATE
+-> 66_ROUTE_WRITE_BOUNDARY
 -> 71_SUCCESS_BUILDER
 -> 80_OUTPUT_SANITIZER
 -> 90_FINAL_OUTPUT
@@ -1541,8 +1691,10 @@ Keine vorzeitige öffentliche Ausgabe
 ```text
 Allowlist exakt
 Pfad normalisiert
+Zielpfad-Allowlist exakt
 Grenzwerte umgesetzt
-Keine externe Abfrage
+Repository-Preflight ausschließlich read-only
+Keine Netzwerkabfrage
 ```
 
 ### Entscheidung
@@ -1559,6 +1711,7 @@ Kein Validator entscheidet allein
 Nur Patch-Metadaten
 applied = false
 Kein Schreibnode
+Write Boundary dauerhaft geschlossen
 ```
 
 ### Ausgabe
@@ -1584,20 +1737,23 @@ Die n8n-Implementierung erfolgt in dieser Reihenfolge:
 6. Security Validator implementieren,
 7. erste Decision Engine implementieren,
 8. initiale Verzweigung anlegen,
-9. Canonical Request Builder implementieren,
-10. Patch Simulator implementieren,
-11. Patch Validator implementieren,
-12. Patch Decision Engine implementieren,
-13. zweite Verzweigung anlegen,
-14. Rejection Builder implementieren,
-15. Success Builder implementieren,
-16. Output Sanitizer implementieren,
-17. Final Output anlegen,
-18. Verbindungen prüfen,
-19. Credentials und verbotene Nodes prüfen,
-20. Workflow inaktiv speichern,
-21. Testfälle aus `TESTS_v0.2.0.md` ausführen,
-22. bereinigten Export erzeugen und prüfen.
+9. Repository-Preflight-Adapter separat evaluieren und erst nach Nachweis implementieren,
+10. Preflight-Entscheidung und -Route anlegen,
+11. Canonical Request Builder implementieren,
+12. Patch Simulator implementieren,
+13. Patch Validator implementieren,
+14. Patch Decision Engine implementieren,
+15. zweite Verzweigung anlegen,
+16. dauerhaft geschlossene Write Boundary und Route implementieren,
+17. Rejection Builder implementieren,
+18. Success Builder implementieren,
+19. Output Sanitizer implementieren,
+20. Final Output anlegen,
+21. Verbindungen prüfen,
+22. Credentials und verbotene Nodes prüfen,
+23. Workflow inaktiv speichern,
+24. Testfälle aus `TESTS_v0.2.0.md` ausführen,
+25. bereinigten Export erzeugen und prüfen.
 
 Es wird nicht parallel an einer schreibenden Writer-Version gearbeitet.
 
@@ -1615,6 +1771,8 @@ Es wird nicht parallel an einer schreibenden Writer-Version gearbeitet.
 - der Erfolgsweg vollständig funktioniert,
 - jeder Ablehnungsweg den Sanitizer durchläuft,
 - Patch-Metadaten validiert werden,
+- der Repository-Preflight nachweislich nur lesend arbeitet,
+- die Write Boundary dauerhaft geschlossen und nicht umgehbar ist,
 - keine Datei verändert werden kann,
 - keine Credentials eingebunden sind,
 - keine automatische Verbindung zu WF-0013 besteht,
@@ -1652,6 +1810,7 @@ Implementation: not-started
 Nodes created: 0
 Tests: not-run
 Credentials: forbidden
+Repository preflight: planned, implementation mechanism open
 GitHub write nodes: forbidden
 Filesystem write nodes: forbidden
 Automatic controller connection: forbidden
@@ -1667,6 +1826,7 @@ ARCHITECTURE_v0.2.0.md,
 FLOW_v0.2.0.md und
 TESTS_v0.2.0.md gemeinsam auf Widersprüche prüfen.
 
-Erst nach bestandenem Dokumentationsabgleich darf der
+Anschließend muss der ausschließlich lesende Repository-Preflight technisch
+evaluiert werden. Erst nach seinem dokumentierten Konformitätsnachweis darf der
 inaktive n8n-Workflow WF-0011 v0.2.0 angelegt werden.
 ```

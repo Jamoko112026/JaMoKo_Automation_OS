@@ -4,6 +4,29 @@ Alle wesentlichen Änderungen am Workflow GitHub Writer werden in diesem Dokumen
 
 ---
 
+## [Unreleased]
+
+### Geplant für v0.2.0
+
+- Statische Zielpfad-Allowlist zusätzlich zur Owner-Repository-Allowlist
+  dokumentiert.
+- Ausschließlich lesenden lokalen Repository-Preflight für gültiges
+  Git-Repository, Branch `main` und sauberen Working Tree geplant; technische
+  n8n-Umsetzung und Konformitätsnachweis bleiben offen.
+- Zentrale Sanitizer-Grenze um rohe Preflight-Ausgaben sowie Logging- und
+  Ausführungsdatenanforderungen ergänzt.
+- Dauerhaft geschlossene Write Boundary vor jeder denkbaren Datei-, Commit-
+  oder Push-Stufe festgelegt.
+- Testplanung für erlaubte Simulation, blockierte Schreibwünsche, ungültiges
+  Repository, unsauberen Working Tree und bereinigte Preflight-Fehler ergänzt.
+- Klargestellt, dass v0.2.0 nur validiert, intern vorbereitet und simuliert;
+  Write, Commit, Push, Credentials, HTTP und GitHub-Zugriffe bleiben verboten.
+
+Diese Änderungen veröffentlichen ausschließlich Planung und Dokumentation. Es
+existiert weiterhin keine v0.2.0-Implementierung und kein v0.2.0-Export.
+
+---
+
 ## [0.1.0] – 2026-08-03
 
 ### Status

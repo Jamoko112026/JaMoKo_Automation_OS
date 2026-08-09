@@ -150,8 +150,11 @@ Für v0.2.0 gelten folgende Regeln:
 8. Eine fehlende `request_id` wird nicht automatisch ersetzt.
 9. Es dürfen keine Credentials eingebunden sein.
 10. Es dürfen keine Netzwerk- oder GitHub-Aufrufe erfolgen.
-11. Es dürfen keine Shell- oder Systembefehle ausgeführt werden.
-12. Es dürfen keine Dateioperationen erfolgen.
+11. Zulässig ist ausschließlich ein noch zu implementierender, lesender lokaler
+    Repository-Preflight. Sein technischer Mechanismus muss vor der Umsetzung
+    separat freigegeben werden.
+12. Dateiänderungen sowie mutierende Git-, Shell- oder Systembefehle sind
+    verboten.
 13. Kein anderer Workflow darf automatisch gestartet werden.
 14. Alle Erfolgs- und Fehlerwege müssen den Output Sanitizer durchlaufen.
 15. Jede Ausführung erzeugt genau ein End-Item.
@@ -341,6 +344,7 @@ source.controller_workflow = WF-0013
 source.controller_status = prepared
 source.audit_status = passed
 source.approved_by = manual_review
+```
 
 ---
 
@@ -369,6 +373,85 @@ Die Allowlist:
 * wird nicht aus externen Quellen geladen,
 * enthält keine Credentials,
 * wird in der Implementierungsdokumentation nachvollziehbar festgehalten.
+
+### 12.1 Zielpfad-Allowlist
+
+Nach der Pfadsicherheitsprüfung muss `target.path` zusätzlich exakt in einer
+statischen Zielpfad-Allowlist enthalten sein. Sichere Syntax allein stellt
+keine Freigabe dar.
+
+Für den v0.2.0-Entwurf ist ausschließlich folgender simulationsbezogener
+Testpfad vorgesehen:
+
+```text
+02_WORKFLOWS/WF-0011_GitHub_Writer/README.md
+```
+
+Diese Aufnahme erlaubt nur Validierung, Vorbereitung und Simulation. Sie ist
+keine Schreibfreigabe. Weitere Pfade dürfen erst nach einer dokumentierten
+Governance-Entscheidung ergänzt werden. Eine Abweichung führt zu:
+
+```text
+TARGET_PATH_NOT_ALLOWED
+```
+
+### 12.2 Lokaler Repository-Preflight
+
+Nach vollständiger Eingangs- und Allowlist-Prüfung und vor der Erzeugung des
+kanonischen Auftrags muss ein separater, ausschließlich lesender Preflight
+bestätigen:
+
+* das vorkonfigurierte lokale Ziel ist ein gültiges Git-Repository,
+* das Repository entspricht der statisch freigegebenen
+  Owner-Repository-Kombination,
+* der aktuelle lokale Branch entspricht `target.ref = main`,
+* der Working Tree enthält weder vorgemerkte noch nicht vorgemerkte noch
+  unversionierte Änderungen.
+
+Der lokale Repository-Pfad stammt nicht aus dem Auftrag und darf weder im
+Endergebnis noch in Fehlermeldungen erscheinen. Der Preflight darf keine Datei
+verändern, keinen Index aktualisieren, keinen Lock erzeugen, keinen Hook
+starten, keine Netzwerkverbindung aufbauen und keine Credentials verwenden.
+
+Fehler werden ausschließlich über statische Codes veröffentlicht:
+
+```text
+REPOSITORY_INVALID
+WORKTREE_NOT_CLEAN
+REPOSITORY_PREFLIGHT_FAILED
+```
+
+Welcher n8n-kompatible technische Adapter diese Anforderungen sicher erfüllt,
+ist noch offen. Bis zu einem dokumentierten Konformitätsnachweis ist der
+Preflight nicht operativ umgesetzt und v0.2.0 bleibt `draft`.
+
+### 12.3 Aktionsentscheidung und harte Schreibgrenze
+
+Für v0.2.0 gilt verbindlich:
+
+| Aktion | Zulässigkeit |
+|---|---|
+| Auftrag validieren | zulässig |
+| lokalen Repository-Zustand ausschließlich lesend prüfen | geplant, noch nicht implementiert |
+| kanonischen Auftrag intern vorbereiten | zulässig |
+| Vollinhalt-Patch ausschließlich im Speicher simulieren | zulässig |
+| Datei schreiben oder löschen | verboten |
+| Index oder Working Tree verändern | verboten |
+| Commit erzeugen | verboten |
+| Push oder sonstigen Netzwerkaufruf ausführen | verboten |
+
+Ein zentrales Write-Gate liegt nach Patch-Validierung und vor jeder denkbaren
+Write-, Commit- oder Push-Stufe. Es ist in v0.2.0 dauerhaft geschlossen. Eine
+Ausführungsstufe und eine erfolgreiche Gate-Route existieren nicht. Jeder
+Schreibwunsch oder interne Umgehungsversuch führt zu:
+
+```text
+WRITE_NOT_ALLOWED
+```
+
+`prepared` bezeichnet weiterhin ausschließlich den von WF-0013 gemeldeten
+Eingangsstatus. WF-0011 v0.2.0 führt keinen öffentlichen Erfolgsstatus
+`prepared` ein; sein Erfolg bleibt `status = simulated`.
 
 ---
 
@@ -843,6 +926,7 @@ INVALID_CONTROLLER_SOURCE
 CONTROLLER_NOT_PREPARED
 AUDIT_NOT_PASSED
 TARGET_NOT_ALLOWED
+TARGET_PATH_NOT_ALLOWED
 INVALID_PATH
 INVALID_REF
 SOURCE_SHA_MISSING
@@ -850,7 +934,11 @@ INVALID_SOURCE_SHA
 INVALID_CONTENT
 CONTENT_TOO_LARGE
 INVALID_COMMIT_MESSAGE
+REPOSITORY_INVALID
+WORKTREE_NOT_CLEAN
+REPOSITORY_PREFLIGHT_FAILED
 PATCH_VALIDATION_FAILED
+WRITE_NOT_ALLOWED
 INTERNAL_ERROR
 ```
 
@@ -891,6 +979,19 @@ Auch der technische Fehlerweg muss den Output Sanitizer und anschließend den Fi
 Alle Ergebniswege müssen zwingend durch den Output Sanitizer geführt werden.
 
 Der Sanitizer arbeitet mit festen Allowlists.
+
+Der Sanitizer ist zugleich die einzige Grenze für öffentliche Workflow-
+Ergebnisse und versionierte Exporte. Rohe Preflight-Ausgaben, lokale Pfade,
+Git-Ausgaben sowie Standardfehlerströme dürfen nicht in das interne Envelope
+oder den öffentlichen Output übernommen werden.
+
+Der Sanitizer allein kann die Speicherung interner n8n-Ausführungsdaten und
+Plattform-Logs nicht garantieren. Vor `testing` müssen deshalb zusätzlich die
+Logging-, Fehler- und Ausführungsdateneinstellungen nachweislich so geprüft
+werden, dass Tokens oder Secrets weder gespeichert noch exportiert werden.
+Solange dieser Nachweis fehlt, dürfen nur künstliche Daten ohne Secrets
+verwendet werden und es darf keine operative Sicherheitsgarantie behauptet
+werden.
 
 Er entfernt insbesondere:
 
@@ -969,7 +1070,8 @@ Es dürfen nicht entstehen:
 
 ## 29. Determinismus
 
-WF-0011 v0.2.0 muss bei identischem Eingang fachlich identische Ergebnisse erzeugen.
+WF-0011 v0.2.0 muss bei identischem Eingang und identischem, unverändertem
+Repository-Preflight-Zustand fachlich identische Ergebnisse erzeugen.
 
 Nicht zulässig sind:
 
@@ -978,7 +1080,8 @@ Nicht zulässig sind:
 * Zufallswerte,
 * wechselnde Standardwerte,
 * wechselnde Fehlerprioritäten,
-* umgebungsabhängige öffentliche Ergebnisse.
+* öffentliche Ergebnisse, die über die dokumentierten statischen
+  Repository-Preflight-Codes hinaus von Umgebungsdetails abhängen.
 
 Eine fehlende `request_id` bleibt fehlend.
 
@@ -1001,12 +1104,17 @@ Zusätzlich gilt:
 
 ```text
 GitHub-Aufrufe = 0
-Dateioperationen = 0
+Dateiänderungen = 0
 Commits = 0
 Pushes = 0
-Shell-Ausführungen = 0
+mutierende Git-/Shell-/Systemausführungen = 0
 automatisch gestartete Folge-Workflows = 0
 ```
+
+Der ausschließlich lesende lokale Repository-Preflight ist keine
+Schreibwirkung. Er ist die einzige geplante Ausnahme vom bisherigen reinen
+In-Memory-Betrieb und darf erst nach einem separaten technischen
+Konformitätsnachweis umgesetzt werden.
 
 Diese Regeln gelten für:
 
@@ -1026,20 +1134,23 @@ Verboten sind insbesondere:
 
 * GitHub-Nodes,
 * HTTP-Request-Nodes,
-* Execute-Command-Nodes,
+* nicht ausdrücklich für den lesenden Repository-Preflight freigegebene
+  Execute-Command- oder Prozess-Nodes,
 * SSH-Nodes,
 * Datei-Schreibnodes,
 * Datei-Löschnodes,
-* Git-Nodes,
+* Git-Nodes mit Netzwerk- oder Mutationsfähigkeit,
 * Datenbank-Schreibnodes,
 * E-Mail- oder Messaging-Nodes,
 * aktivierende Webhook-Trigger,
 * Schedule- oder Cron-Trigger,
 * Nodes zum Starten anderer Workflows,
 * Community-Nodes mit ungeklärtem Verhalten,
-* Code, der Netzwerk-, Datei- oder Systemzugriffe ausführt.
+* Code, der Netzwerkzugriffe, Dateiänderungen oder nicht freigegebene Systemzugriffe ausführt.
 
-Zulässig sind nur die in `ARCHITECTURE_v0.2.0.md` und `FLOW_v0.2.0.md` freigegebenen, seiteneffektfreien Komponenten.
+Zulässig sind nur die in `ARCHITECTURE_v0.2.0.md` und `FLOW_v0.2.0.md`
+freigegebenen, seiteneffektfreien Komponenten. Der konkrete Preflight-Adapter
+ist noch nicht freigegeben und darf nicht vorweggenommen werden.
 
 ---
 
@@ -1110,7 +1221,7 @@ Die Entwicklung oder Prüfung wird sofort gestoppt, wenn:
 * ein Token oder Secret sichtbar wird,
 * ein automatischer Trigger aktiv ist,
 * ein anderer Workflow automatisch gestartet wird,
-* ein Shell- oder Systembefehl ausgeführt wird,
+* ein nicht freigegebener oder mutierender Git-, Shell- oder Systembefehl ausgeführt wird,
 * der Output Sanitizer umgangen wird,
 * ein technischer Fehler ungefiltert ausgegeben wird,
 * mehr als ein End-Item entsteht.
@@ -1155,7 +1266,10 @@ WF-0011 v0.2.0 gilt als spezifikationsgemäß umgesetzt, wenn:
 * ausschließlich WF-0013 als Controller-Herkunft akzeptiert wird,
 * `prepared` und `passed` verbindlich geprüft werden,
 * nur freigegebene Owner-Repository-Paare zulässig sind,
+* nur statisch freigegebene Zielpfade zulässig sind,
 * Pfade sicher normalisiert und validiert werden,
+* der lokale Repository-Preflight ein gültiges Repository, den erwarteten
+  Branch und einen sauberen Working Tree ausschließlich lesend bestätigt,
 * Referenz und SHA korrekt geprüft werden,
 * Inhalt und Commit-Nachricht innerhalb der Grenzwerte liegen,
 * ein kanonischer interner Auftrag erzeugt wird,
@@ -1167,6 +1281,7 @@ WF-0011 v0.2.0 gilt als spezifikationsgemäß umgesetzt, wenn:
 * keine internen oder vertraulichen Daten öffentlich erscheinen,
 * keine Datei verändert wird,
 * kein Commit und kein Push erfolgt,
+* das Write-Gate dauerhaft geschlossen bleibt,
 * kein GitHub- oder Netzwerkaufruf erfolgt,
 * keine Credentials eingebunden sind,
 * kein anderer Workflow gestartet wird,
@@ -1216,13 +1331,14 @@ Version: 0.2.0
 Status: draft
 Mode: simulation
 Specification: defined
-Architecture: incomplete
+Architecture: defined
 Flow: defined
 Tests: defined
 Implementation: not-started
 Workflow active: false
 Credentials: forbidden
 GitHub access: forbidden
+Read-only local repository preflight: planned, not implemented
 File changes: forbidden
 Commits: forbidden
 Pushes: forbidden
@@ -1235,12 +1351,11 @@ Approval: not-approved
 ## 39. Nächster konkreter Schritt
 
 ```text
-ARCHITECTURE_v0.2.0.md vollständig neu aufbauen.
-
-Anschließend SPECIFICATION_v0.2.0.md,
+SPECIFICATION_v0.2.0.md,
 ARCHITECTURE_v0.2.0.md, FLOW_v0.2.0.md und
 TESTS_v0.2.0.md gemeinsam auf Widersprüche prüfen.
 
-Erst nach bestandenem Dokumentationsabgleich darf der
-inaktive n8n-Workflow WF-0011 v0.2.0 angelegt werden.
+Anschließend einen n8n-kompatiblen, ausschließlich lesenden
+Repository-Preflight technisch evaluieren. Erst nach dokumentiertem
+Konformitätsnachweis darf der inaktive Workflow-Entwurf angelegt werden.
 ```
