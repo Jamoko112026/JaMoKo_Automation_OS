@@ -19,11 +19,40 @@ Das Format orientiert sich an **Keep a Changelog** und verwendet semantische Ver
 
 ## [Unreleased]
 
+### Added
+
+- Separaten technischen Export
+  `exports/WF-0012_GitHub_Reader_v0.1.1.json` zur Umsetzung des veröffentlichten
+  `v0.1.1`-Dokumentvertrags angelegt
+- Vollständige Validierung der sieben garantierten Erfolgsfelder im finalen
+  Vertrags-Guard ergänzt
+- Sicheren zentralen Ausgabe- und Fehlerpfad ohne Ziel- oder Inhaltsdaten in
+  Fehlerergebnissen ergänzt
+- Zentralen Kardinalitäts-Guard direkt hinter den Triggerpfaden ergänzt, der
+  null oder mehrere Eingangsobjekte mit dem bestehenden Fehlercode
+  `INPUT_INVALID` auf genau eine minimale Fehlerausgabe reduziert
+
+### Changed
+
+- Zielwerte werden nicht mehr getrimmt; Rand-Leerzeichen führen zur Ablehnung
+- Datei-SHA wird vor Erfolgsbildung exakt gegen `^[a-fA-F0-9]{40}$` geprüft
+- Base64-dekodierter Inhalt wird durch eine bytegenaue UTF-8-Rundreise auf
+  verlustfreie Dekodierung geprüft
+- `file.name` und `file.size` aus der finalen Erfolgsausgabe entfernt
+- Execute-Workflow-Trigger mit `alwaysOutputData` abgesichert, damit eine
+  Null-Item-Übergabe den Kardinalitäts-Guard über einen leeren Platzhalter
+  erreichen kann
+
+### Testing
+
+- Lokale Code- und Strukturtests `T-015` bis `T-030` für den v0.1.1-Export
+  erfolgreich durchgeführt
+- Operativer Import- und Laufzeitnachweis in n8n bleibt offen
+- Laufzeitnachweis der Null-Item-Semantik von `alwaysOutputData` am
+  Execute-Workflow-Trigger bleibt ausdrücklich offen
+
 ### Geplant
 
-- Technische Export-Implementierung auf Konformität mit dem veröffentlichten
-  `v0.1.1`-Dokumentvertrag bringen
-- Konformen, bereinigten n8n-Workflow-Export unter `exports/` ablegen
 - Konformitätsnachweis für den `v0.1.1`-Dokumentvertrag mit bereinigten
   Testnachweisen unter `screenshots/` ablegen
 - GitHub-Credential-Berechtigungen dokumentieren
