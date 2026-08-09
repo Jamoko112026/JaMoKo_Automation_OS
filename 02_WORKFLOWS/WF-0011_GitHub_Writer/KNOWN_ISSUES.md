@@ -113,6 +113,69 @@ Beabsichtigte Sicherheitsbeschränkung.
 
 ---
 
+## KI-007 – Keine allgemeine Sperre geschützter Git-Pfade
+
+### Beschreibung
+
+Der Export prüft die Endung `.md` und mehrere unsichere Pfadmuster, besitzt aber
+keine ausdrückliche Sperre für `.git` oder andere geschützte
+Repository-Bereiche.
+
+### Auswirkung
+
+Der dokumentierte Testwert `.git/config` wird wegen der fehlenden `.md`-Endung
+abgelehnt. Ein Pfad wie `.git/config.md` wird durch die aktuelle Prüfung nicht
+allein wegen des `.git`-Segments abgewiesen.
+
+### Bewertung
+
+Vor einer Wiederverwendung der Pfadprüfung oder jeder späteren Schreibversion
+muss eine explizite, getestete Sperre geschützter Bereiche definiert und
+implementiert werden.
+
+---
+
+## KI-008 – Kein zentraler Fehler-Sanitizer
+
+### Beschreibung
+
+Der Knoten `03 – Validate and Simulate` erzeugt strukturierte Ergebnisse für
+erwartete Validierungsfehler. Ein zentraler sicherer Fehlerpfad für unerwartete
+JavaScript-Laufzeitfehler ist nicht vorhanden.
+
+### Auswirkung
+
+Fehler außerhalb der ausdrücklich behandelten Prüfbedingungen sind nicht durch
+den dokumentierten `rejected`-Vertrag abgesichert.
+
+### Bewertung
+
+Vor einer externen Anbindung muss ein minimaler, bereinigter Fehlerpfad
+vorgesehen und getestet werden.
+
+---
+
+## KI-009 – Keine reproduzierbaren Runtime-Artefakte
+
+### Beschreibung
+
+`TESTS.md` dokumentiert 17 manuelle n8n-Tests als bestanden. Innerhalb der
+v0.1.0-Dokumentation liegen dazu keine maschinenlesbaren Ausführungsprotokolle
+vor.
+
+### Auswirkung
+
+Die historischen Ergebnisse sind aus den geprüften Dateien nicht unabhängig
+reproduzierbar. Statisch prüfbar bleiben der Exportcode, die Knotenstruktur und
+das Fehlen schreibender Komponenten.
+
+### Bewertung
+
+Bei einer erneuten Abnahme sollten Eingaben, Ausgaben und Laufkontext als
+versionierbare Testartefakte gesichert werden.
+
+---
+
 ## Voraussetzung für eine spätere Schreibversion
 
 Vor der Entwicklung einer schreibenden Version müssen mindestens folgende Punkte gelöst und dokumentiert sein:
@@ -133,10 +196,15 @@ Vor der Entwicklung einer schreibenden Version müssen mindestens folgende Punkt
 
 ## Aktueller Gesamtstatus
 
-Es sind keine unbeabsichtigten Schreibwirkungen bekannt.
+Es sind keine unbeabsichtigten Schreibwirkungen bekannt. Der veröffentlichte,
+deaktivierte Export enthält drei Knoten, keine Credentials und keine GitHub-,
+HTTP-, Datei-, Commit- oder Push-Funktion.
 
-Der Simulationsworkflow wurde in n8n aufgebaut und alle 17 definierten Testfälle wurden am 03.08.2026 erfolgreich ausgeführt.
+Die 17 definierten Testfälle sind in `TESTS.md` als am 03.08.2026 bestanden
+dokumentiert. Maschinenlesbare Runtime-Protokolle liegen innerhalb der
+v0.1.0-Dateien nicht vor.
 
 Die aufgeführten Einschränkungen entsprechen überwiegend dem bewusst begrenzten Funktionsumfang von WF-0011 v0.1.0.
 
-Der n8n-Export und die visuellen Nachweise wurden vollständig in den vorgesehenen Nachweisordnern abgelegt.
+Der n8n-Export liegt im vorgesehenen Exportordner. Aussagen zu visuellen
+Nachweisen ersetzen keinen reproduzierbaren Runtime-Nachweis.

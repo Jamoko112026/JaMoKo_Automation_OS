@@ -58,6 +58,9 @@ Simulierter Schreibplan
 In Version 0.1.0 endet die Pipeline bei einem simulierten Schreibplan.
 
 Das GitHub-Repository ist das spätere Schreibziel, wird in dieser Version jedoch nicht verändert.
+Der veröffentlichte Export ist nicht technisch mit den dargestellten
+Vorgänger-Workflows verbunden; er startet manuell und erzeugt seinen festen
+Testdatensatz lokal.
 
 ---
 
@@ -134,7 +137,11 @@ Fehlende oder ungültige Pflichtfelder führen zu einem kontrollierten Abbruch.
 
 ## Verarbeitungskomponenten
 
-Die Architektur von WF-0011 besteht aus sieben logischen Komponenten.
+Die Architektur von WF-0011 umfasst sieben logische Funktionen. Im tatsächlich
+veröffentlichten Export sind diese Funktionen nicht als getrennte n8n-Knoten
+umgesetzt. Nach Trigger und lokalem Testdatensatz bündelt der Knoten
+`03 – Validate and Simulate` sämtliche Validierungs-, Planungs-, Simulations-
+und Ergebnisfunktionen monolithisch.
 
 ### 1. Input Receiver
 
@@ -269,18 +276,15 @@ Hinter der Sicherheitsgrenze befinden sich Funktionen, die erst in späteren Ver
 
 ## Pfadsicherheit
 
-Der angegebene Zielpfad wird als relativer Repository-Pfad behandelt.
+Der angegebene Zielpfad wird als relativer Repository-Pfad behandelt. Die
+Pfadprüfung erzeugt keine Datei.
 
-Nicht zulässig sind insbesondere:
-
-- absolute Pfade,
-- Pfade mit `..`,
-- Pfade außerhalb des freigegebenen Repository-Bereichs,
-- leere Pfade,
-- nicht erwartete Protokoll- oder URL-Angaben,
-- Pfade zu geschützten Git- oder Systembereichen.
-
-Die Pfadprüfung erzeugt keine Datei und prüft in Version 0.1.0 ausschließlich die Zulässigkeit des geplanten Ziels.
+Der Export prüft technisch, ob `path` ein String mit der Endung `.md` ist,
+nicht mit `/` oder `~` beginnt und weder `..`, `\`, `://` noch ein Nullbyte
+enthält. Eine ausdrückliche Sperre für `.git` oder andere geschützte Bereiche
+ist nicht implementiert. Ebenso gibt es keine eigene Allowlist für einen
+freigegebenen Repository-Teilbereich. Solche weitergehenden Anforderungen
+dürfen daher nicht als technisch erfüllt gelten.
 
 ---
 
@@ -348,7 +352,7 @@ Er bedeutet nicht, dass die Änderung ausgeführt wurde.
 
 ## Fehlerarchitektur
 
-Fehler werden kontrolliert behandelt und als strukturiertes Ergebnis ausgegeben.
+Erwartete Validierungsfehler werden kontrolliert behandelt und als strukturiertes Ergebnis ausgegeben.
 
 ```text
 Prüfschritt
@@ -370,7 +374,9 @@ Ein Fehlerergebnis enthält mindestens:
 - `commitCreated`
 - `pushExecuted`
 
-Auch bei Fehlern müssen die letzten drei Werte `false` bleiben.
+Auch bei diesen kontrollierten Fehlern bleiben die letzten drei Werte `false`.
+Ein zentraler Fehler-Sanitizer für unerwartete Laufzeitfehler ist im Export
+nicht vorhanden.
 
 ---
 
@@ -393,22 +399,17 @@ Auch bei Fehlern müssen die letzten drei Werte `false` bleiben.
 
 ## Technische Umsetzung in n8n
 
-Die logischen Komponenten werden in n8n durch klar getrennte Nodes umgesetzt.
+Der veröffentlichte Export besteht aus genau drei linear verbundenen Knoten:
 
-Vorgesehene Node-Gruppen:
+1. `01 – Manual Trigger` – manueller Start,
+2. `02 – Test Input` – Erzeugung genau eines festen lokalen Testdatensatzes,
+3. `03 – Validate and Simulate` – monolithische Validierung, Erzeugung von
+   `changePlan` und `patchPreview` sowie Aufbau des Erfolgs- oder
+   Ablehnungsergebnisses.
 
-1. Trigger und Input
-2. Input-Normalisierung
-3. Pflichtfeldprüfung
-4. Approval- und Auditprüfung
-5. Safety-Mode-Prüfung
-6. Objekt- und Pfadprüfung
-7. Erzeugung des Change Plans
-8. Patch-Simulation
-9. Ergebnisaufbau
-10. Erfolgs- oder Fehlerausgabe
-
-Die konkrete Node-Reihenfolge und die einzelnen Verzweigungen werden in `FLOW.md` beschrieben.
+Der Workflow ist deaktiviert. Er besitzt keine Credentials und keine GitHub-,
+HTTP-, Datei-, Git-, Commit- oder Push-Knoten. Die genaue interne Prüffolge des
+dritten Knotens ist in `FLOW.md` beschrieben.
 
 ---
 
@@ -487,26 +488,10 @@ Die Architektur basiert auf:
 
 ## Erweiterungspfad
 
-Spätere Versionen können zusätzliche Sicherheitsmodi einführen.
-
-Mögliche Entwicklungsstufen:
-
-```text
-v0.1.0
-Simulation und Patch-Vorschau
-
-v0.2.0
-Lesender Abgleich mit Repository und sourceSha
-
-v0.3.0
-Kontrolliertes Schreiben in einen isolierten Branch
-
-v0.4.0
-Commit-Erstellung nach erneuter Freigabe
-
-v1.0.0
-Produktiver Writer mit vollständiger Governance
-```
+Die allgemeinen Dokumente beschreiben ausschließlich v0.1.0. Die Dateien mit
+dem Suffix `_v0.2.0.md` bilden einen noch nicht implementierten Entwurf mit
+eigenem Eingangsmodell. Aus diesem Entwurf folgt keine bereits vorhandene
+GitHub-, Datei-, Commit- oder Push-Funktion.
 
 Jede Erweiterung benötigt:
 

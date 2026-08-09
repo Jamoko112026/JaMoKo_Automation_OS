@@ -39,14 +39,18 @@ Getestet werden:
 
 ## Testumgebung
 
-Die Tests wurden manuell in n8n ausgeführt.
+Die Tabelle in diesem Dokument hält manuell dokumentierte n8n-Testergebnisse
+vom 2026-08-03 fest. Für diese Läufe liegen innerhalb der hier geprüften
+v0.1.0-Dateien keine maschinenlesbaren Ausführungsprotokolle vor. Die Angaben
+sind daher historische Testdokumentation und kein unabhängig reproduzierter
+Runtime-Nachweis.
 
 Verwendet werden:
 
 - `Manual Trigger`,
-- feste Testdaten im Node `Set Simulation Input`,
+- feste Testdaten im Node `02 – Test Input`,
 - Betriebsmodus `simulation`,
-- keine GitHub-Schreibzugänge,
+- keine Credentials und kein GitHub- oder HTTP-Zugriff,
 - keine Git-Befehle,
 - keine Nodes mit Dateischreibwirkung.
 
@@ -335,7 +339,7 @@ Der Workflow die Pfadüberschreitung erkennt und die Verarbeitung kontrolliert b
 
 ---
 
-## T-011 – Geschützter Git-Pfad
+## T-011 – `.git/config` ohne Markdown-Endung
 
 ### Änderung der Referenz-Eingabe
 
@@ -359,7 +363,15 @@ Der Workflow die Pfadüberschreitung erkennt und die Verarbeitung kontrolliert b
 
 ### Bestanden, wenn
 
-Der Zugriff auf einen geschützten Git-Bereich abgelehnt wird.
+Der konkrete Wert `.git/config` mit `INVALID_PATH` abgelehnt wird.
+
+### Technische Einordnung
+
+Der Export lehnt diesen Wert wegen der fehlenden `.md`-Endung ab. Er besitzt
+keine allgemeine technische Sperre für geschützte `.git`-Pfade. Ein Wert wie
+`.git/config.md` wird durch die derzeitige Pfadprüfung nicht allein wegen des
+`.git`-Segments abgelehnt. Diese Einschränkung ist in `KNOWN_ISSUES.md`
+dokumentiert.
 
 ---
 
@@ -448,12 +460,18 @@ Der Workflow ohne dokumentierten Ausgangs-SHA kontrolliert abbricht.
 
 ### Testaufbau
 
-Für diesen kontrollierten Negativtest wurde die Ausgabe des Patch-Simulations-Nodes vorübergehend so verändert, dass `simulatedPatch.applied` den unzulässigen Wert `true` erhielt. Damit wurde eine bereits erfolgte Schreibwirkung simuliert. Nach Abschluss des Tests wurde die temporäre Änderung vollständig zurückgenommen.
+Der Export besitzt keinen separaten Patch-Simulationsknoten. Um diesen
+kontrollierten Negativtest mit der exportierten Drei-Knoten-Struktur zu
+reproduzieren, müsste die monolithische Logik im Knoten
+`03 – Validate and Simulate` vorübergehend so verändert werden, dass
+`patchPreview.applied` den unzulässigen Wert `true` erhält. Eine solche
+Teständerung ist nicht im veröffentlichten Export enthalten; das historische
+Testprotokoll enthält kein maschinenlesbares Artefakt dieser Ausführung.
 
 ```json
 {
-  "simulatedPatch": {
-    "path": "01_Objects/Finance/FIN-0001/object.md",
+  "patchPreview": {
+    "target": "01_Objects/Finance/FIN-0001/object.md",
     "field": "status",
     "before": null,
     "after": "active",
@@ -545,9 +563,11 @@ Alle Sicherheitswerte `false` sind und im Workflow keine ausführende Schreibkom
 
 ## Testprotokoll
 
-Die Ergebnisse der ausgeführten Tests sind in der folgenden Tabelle dokumentiert:
+Die historisch festgehaltenen Ergebnisse der manuellen Tests sind in der
+folgenden Tabelle dokumentiert. Ohne maschinenlesbare Laufprotokolle stellt die
+Tabelle keinen unabhängigen Runtime-Nachweis dar:
 
-| Test-ID | Datum | Ergebnis | Tatsächlicher Status | Tatsächlicher Fehlercode | Bemerkung |
+| Test-ID | Datum | Dokumentiertes Ergebnis | Dokumentierter Status | Dokumentierter Fehlercode | Bemerkung |
 |---|---|---|---|---|---|
 | T-001 | 2026-08-03 | bestanden | simulated | – | Referenzlauf erfolgreich |
 | T-002 | 2026-08-03 | bestanden | rejected | MISSING_REQUIRED_FIELD | approvedValue entfernt |
@@ -559,7 +579,7 @@ Die Ergebnisse der ausgeführten Tests sind in der folgenden Tabelle dokumentier
 | T-008 | 2026-08-03 | bestanden | rejected | INVALID_OBJECT_ID | Ungültige Objekt-ID abgelehnt |
 | T-009 | 2026-08-03 | bestanden | rejected | INVALID_PATH | Absoluter Zielpfad abgelehnt |
 | T-010 | 2026-08-03 | bestanden | rejected | INVALID_PATH | Unsicherer relativer Pfad abgelehnt |
-| T-011 | 2026-08-03 | bestanden | rejected | INVALID_PATH | Geschützter Git-Pfad abgelehnt |
+| T-011 | 2026-08-03 | bestanden | rejected | INVALID_PATH | `.git/config` wegen fehlender `.md`-Endung abgelehnt; keine allgemeine `.git`-Sperre nachgewiesen |
 | T-012 | 2026-08-03 | bestanden | rejected | INVALID_PATH | Ungültiger Zielpfad abgelehnt |
 | T-013 | 2026-08-03 | bestanden | rejected | INVALID_FIELD | Nicht zugelassenes Zielfeld abgelehnt |
 | T-014 | 2026-08-03 | bestanden | rejected | SOURCE_SHA_MISSING | Spezifische SHA-Prüfung erfolgreich |
@@ -571,7 +591,8 @@ Die Ergebnisse der ausgeführten Tests sind in der folgenden Tabelle dokumentier
 
 ## Abnahmekriterien
 
-WF-0011 v0.1.0 wurde vom Status `testing` in den Status `released` überführt, nachdem folgende Abnahmekriterien erfüllt waren:
+Das historische Testprotokoll begründet die Überführung von WF-0011 v0.1.0
+vom Status `testing` in den Status `released` mit folgenden Kriterien:
 
 - alle 17 Testfälle ausgeführt wurden,
 - alle Testfälle bestanden sind,
@@ -617,6 +638,8 @@ den Wert `true` besitzt oder nicht eindeutig nachgewiesen werden kann, gilt der 
 
 ## Abschluss
 
-Die Testakte deckt den Erfolgsfall, kontrollierte Ablehnungen, ungültige Eingaben, Pfadangriffe und die vollständige Schreibschutzgarantie von WF-0011 v0.1.0 ab.
-
-Die Tests werden nach dem Aufbau des n8n-Workflows ausgeführt und im Testprotokoll dokumentiert.
+Die Testakte definiert den Erfolgsfall, kontrollierte Ablehnungen, ungültige
+Eingaben, ausgewählte Pfadprüfungen und die Schreibschutzbedingungen von
+WF-0011 v0.1.0. Das historische Protokoll dokumentiert diese Fälle als
+bestanden; eine unabhängige Reproduktion benötigt separate maschinenlesbare
+Runtime-Artefakte.

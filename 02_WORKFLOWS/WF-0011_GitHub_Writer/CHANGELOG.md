@@ -47,11 +47,25 @@ Folgende Dokumente wurden für Version 0.1.0 erstellt:
 ### Abschlussstand
 
 - n8n-Workflow vollständig aufgebaut.
-- Alle 17 Testfälle bestanden.
-- Testergebnisse dokumentiert.
+- Alle 17 Testfälle im historischen manuellen Testprotokoll als bestanden dokumentiert.
+- Keine maschinenlesbaren Runtime-Protokolle innerhalb der v0.1.0-Dateien vorhanden.
 - Workflow-Export geprüft und archiviert.
 - Gesamtansicht und Referenzlauf als Screenshots archiviert.
 - Version 0.1.0 bleibt eine reine, deaktivierte Simulation.
+
+### Dokumentationskonsolidierung – 2026-08-09
+
+- Allgemeine Dokumente auf den tatsächlich archivierten Drei-Knoten-Export
+  v0.1.0 ausgerichtet.
+- Monolithische Validierungs-, Change-Plan- und Patch-Preview-Logik im Knoten
+  `03 – Validate and Simulate` klargestellt.
+- Deaktivierten Betrieb ohne Credentials, GitHub-/HTTP-Zugriff oder
+  Schreibwirkung festgehalten.
+- Historische Testdokumentation von unabhängig reproduzierbaren
+  Runtime-Nachweisen abgegrenzt.
+- Fehlende allgemeine `.git`-Pfadsperre und fehlenden zentralen
+  Fehler-Sanitizer als bekannte technische Einschränkungen dokumentiert.
+- v0.2.0-Suffixdateien als nicht implementierten Entwurf abgegrenzt.
 
 ### Sicherheitsentscheidung
 

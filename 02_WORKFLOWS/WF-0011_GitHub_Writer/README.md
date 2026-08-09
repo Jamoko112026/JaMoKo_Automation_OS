@@ -49,9 +49,12 @@ Vor einer späteren Schreibfreigabe müssen insbesondere folgende Punkte geprüf
 
 ## Eingang
 
-WF-0011 verarbeitet genau einen geprüften und freigegebenen Änderungsvorschlag.
+Der exportierte Workflow v0.1.0 erzeugt nach einem manuellen Start genau einen
+festen lokalen Testdatensatz. Dieser Testdatensatz bildet einen geprüften und
+freigegebenen Änderungsvorschlag ab.
 
-Mögliche Quellen sind:
+Die folgenden Quellen beschreiben den fachlichen Kontext, sind im Export jedoch
+nicht technisch angebunden:
 
 - WF-0009 – Object Repair Engine,
 - WF-0010 – Object Auditor,
@@ -101,7 +104,7 @@ Alle übrigen Pflichtwerte müssen vorhanden und eindeutig auswertbar sein.
 
 Der Workflow führt die folgenden Schritte aus:
 
-1. Eingangsdaten übernehmen und normalisieren.
+1. Den festen lokalen Testdatensatz übernehmen.
 2. Anzahl und Vollständigkeit der Eingaben prüfen.
 3. Manuelle Freigabe validieren.
 4. Auditstatus prüfen.
@@ -129,6 +132,23 @@ Der Workflow führt die folgenden Schritte aus:
   "sourceSha": "abc123",
   "approvedBy": "manual_review",
   "auditStatus": "passed",
+  "changePlan": {
+    "operation": "replace_field_value",
+    "objectId": "FIN-0001",
+    "path": "01_Objects/Finance/FIN-0001/object.md",
+    "field": "status",
+    "from": null,
+    "to": "active",
+    "sourceSha": "abc123"
+  },
+  "patchPreview": {
+    "format": "structured_preview",
+    "target": "01_Objects/Finance/FIN-0001/object.md",
+    "field": "status",
+    "before": null,
+    "after": "active",
+    "applied": false
+  },
   "patchValid": true,
   "fileChanged": false,
   "commitCreated": false,
@@ -184,7 +204,7 @@ WF-0011 v0.1.0:
 - erstellt keinen Commit,
 - führt keinen Push aus,
 - erstellt keinen Pull Request,
-- verwendet keine GitHub-API mit Schreibrechten.
+- verwendet weder eine GitHub-API noch einen HTTP-Zugriff.
 
 Diese Werte müssen bei jedem Ergebnis enthalten sein:
 
@@ -226,21 +246,32 @@ Die Workflow-Akte besteht aus:
 - `TESTS.md` – Testfälle und Abnahmekriterien,
 - `CHANGELOG.md` – Versionshistorie,
 - `KNOWN_ISSUES.md` – bekannte Einschränkungen,
-- `exports/` – spätere n8n-Exporte,
-- `screenshots/` – spätere visuelle Nachweise.
+- `exports/` – versionierte n8n-Exporte,
+- `screenshots/` – visuelle Nachweise, soweit vorhanden.
 
 ---
 
 ## Aktueller Stand
 
-Die fachliche Grundlage für WF-0011 v0.1.0 ist dokumentiert.
+Der deaktivierte n8n-Workflow v0.1.0 ist als
+`exports/WF-0011_GitHub_Writer_v0.1.0.json` veröffentlicht. Der Export besitzt
+genau drei Knoten: einen manuellen Trigger, einen Code-Knoten für den festen
+Testdatensatz und einen monolithischen Code-Knoten für Validierung, Change Plan,
+Patch-Vorschau und Ergebnisaufbau.
 
-Der n8n-Workflow wurde noch nicht aufgebaut. Die 17 definierten Testfälle wurden deshalb noch nicht ausgeführt.
+Der Export verwendet keine Credentials, enthält keinen GitHub- oder HTTP-Zugriff
+und führt keine Datei-, Commit- oder Push-Operation aus.
+
+Die allgemeinen Dateien ohne Versionssuffix beschreiben den veröffentlichten
+Stand v0.1.0. Die Dateien `SPECIFICATION_v0.2.0.md`,
+`ARCHITECTURE_v0.2.0.md`, `FLOW_v0.2.0.md` und `TESTS_v0.2.0.md` beschreiben
+einen Entwurf. Dieser Entwurf ist nicht implementiert und besitzt keinen
+Workflow-Export.
 
 ---
 
 ## Nächster Schritt
 
-WF-0011 v0.1.0 wurde in n8n anhand von `FLOW.md` aufgebaut, vollständig getestet und als deaktivierte Simulation veröffentlicht.
-
-Anschließend werden die Testfälle aus `TESTS.md` ausgeführt und im Testprotokoll dokumentiert.
+Vor einer technischen Umsetzung von v0.2.0 sind die bekannten Grenzen von
+v0.1.0 und die v0.2.0-Entwurfsdokumente gemeinsam zu prüfen. Eine spätere
+Implementierung benötigt einen eigenen Export und reproduzierbare Testnachweise.

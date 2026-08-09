@@ -12,168 +12,63 @@ released
 
 ## Zweck
 
-Dieses Dokument beschreibt den konkreten Ablauf von WF-0011 – GitHub Writer.
+Dieses Dokument beschreibt den tatsächlich exportierten Ablauf von WF-0011 –
+GitHub Writer v0.1.0.
 
-Version 0.1.0 arbeitet ausschließlich im Betriebsmodus `simulation`.
-
-Der Workflow prüft einen freigegebenen Änderungsvorschlag, erzeugt einen sicheren Änderungsplan und simuliert einen Patch. Er verändert keine Datei, erstellt keinen Commit und führt keinen Push aus.
-
----
-
-## Startbedingung
-
-Der Workflow startet mit genau einem Änderungsvorschlag, der:
-
-- aus WF-0009 – Object Repair Engine stammt,
-- durch WF-0010 – Object Auditor geprüft wurde,
-- den Auditstatus `passed` besitzt,
-- manuell freigegeben wurde,
-- einen dokumentierten `sourceSha` enthält.
+Der deaktivierte Workflow arbeitet ausschließlich im Modus `simulation`. Er
+erzeugt lokal einen festen Testdatensatz, prüft ihn in einem monolithischen
+Code-Knoten und erzeugt einen Change Plan sowie eine nicht angewendete
+Patch-Vorschau. Er greift nicht auf GitHub oder andere externe Systeme zu.
 
 ---
 
-## Eingangsdaten
+## Tatsächliche Knotenstruktur
 
-```json
-{
-  "objectId": "FIN-0001",
-  "path": "01_Objects/Finance/FIN-0001/object.md",
-  "field": "status",
-  "currentValue": null,
-  "approvedValue": "active",
-  "approvalStatus": "approved",
-  "sourceSha": "abc123",
-  "approvedBy": "manual_review",
-  "auditStatus": "passed"
-}
-```
+Der Export `exports/WF-0011_GitHub_Writer_v0.1.0.json` enthält genau drei
+Knoten:
+
+| Nr. | Exportierter Knotenname | n8n-Typ | Aufgabe |
+|---:|---|---|---|
+| 1 | `01 – Manual Trigger` | Manual Trigger | startet den lokalen Lauf manuell |
+| 2 | `02 – Test Input` | Code | erzeugt genau einen festen lokalen Testdatensatz |
+| 3 | `03 – Validate and Simulate` | Code | validiert den Datensatz monolithisch, erzeugt `changePlan` und `patchPreview` und baut genau ein Ergebnis |
+
+Es gibt keine getrennten Knoten für Normalisierung, einzelne Gates,
+Patch-Simulation, Verzweigungen oder Ergebnisaufbau. Diese fachlichen Schritte
+sind vollständig im dritten Code-Knoten zusammengefasst.
 
 ---
 
-## Gesamtfluss
+## Verbindungsplan
 
 ```text
-Manual Trigger
-      │
-      ▼
-Set Simulation Input
-      │
-      ▼
-Normalize Input
-      │
-      ▼
-Validate Required Fields
-      │
-      ▼
-Required Fields Valid?
-      │
-      ├── Nein ──► Build Rejected Result
-      │
-      └── Ja
-            │
-            ▼
-      Validate Approval
-            │
-            ▼
-      Approval Valid?
-            │
-            ├── Nein ──► Build Rejected Result
-            │
-            └── Ja
-                  │
-                  ▼
-            Validate Audit
-                  │
-                  ▼
-            Audit Passed?
-                  │
-                  ├── Nein ──► Build Rejected Result
-                  │
-                  └── Ja
-                        │
-                        ▼
-                  Validate Safety
-                        │
-                        ▼
-                  Safety Valid?
-                        │
-                        ├── Nein ──► Build Rejected Result
-                        │
-                        └── Ja
-                              │
-                              ▼
-                        Build Change Plan
-                              │
-                              ▼
-                        Simulate Patch
-                              │
-                              ▼
-                        Validate Patch
-                              │
-                              ▼
-                        Patch Valid?
-                              │
-                              ├── Nein ──► Build Rejected Result
-                              │
-                              └── Ja
-                                    │
-                                    ▼
-                              Build Simulated Result
+01 – Manual Trigger
+        |
+        v
+02 – Test Input
+        |
+        v
+03 – Validate and Simulate
+        |
+        +-- kontrollierte Ablehnung: genau ein rejected-Ergebnis
+        |
+        +-- erfolgreiche Simulation: genau ein simulated-Ergebnis
 ```
 
----
-
-## Node-Übersicht
-
-| Nr. | Node-Name | Typ | Aufgabe |
-|---:|---|---|---|
-| 1 | Manual Trigger | Manual Trigger | Startet den Testlauf |
-| 2 | Set Simulation Input | Set | Stellt Testdaten bereit |
-| 3 | Normalize Input | Code | Normalisiert die Eingangsdaten |
-| 4 | Validate Required Fields | Code | Prüft Pflichtfelder und Grundstruktur |
-| 5 | Required Fields Valid? | IF | Trennt gültige und ungültige Eingaben |
-| 6 | Validate Approval | Code | Prüft Freigabe und Freigabeinstanz |
-| 7 | Approval Valid? | IF | Trennt freigegebene und abgewiesene Vorschläge |
-| 8 | Validate Audit | Code | Prüft den Auditstatus |
-| 9 | Audit Passed? | IF | Trennt bestandene und nicht bestandene Audits |
-| 10 | Validate Safety | Code | Prüft Modus, Objekt-ID, Pfad und SHA |
-| 11 | Safety Valid? | IF | Trennt sichere und unsichere Vorschläge |
-| 12 | Build Change Plan | Code | Erzeugt den strukturierten Änderungsplan |
-| 13 | Simulate Patch | Code | Erzeugt den simulierten Patch |
-| 14 | Validate Patch | Code | Prüft das Simulationsergebnis |
-| 15 | Patch Valid? | IF | Trennt gültige und ungültige Patches |
-| 16 | Build Simulated Result | Code | Erzeugt das erfolgreiche Endergebnis |
-| 17 | Build Rejected Result | Code | Erzeugt ein strukturiertes Fehlerergebnis |
+Der Export ist deaktiviert (`active: false`).
 
 ---
 
-## Node 1 – Manual Trigger
+## Knoten 1 – `01 – Manual Trigger`
 
-### Typ
-
-`Manual Trigger`
-
-### Aufgabe
-
-Startet WF-0011 während Entwicklung und Test manuell.
-
-### Sicherheitswirkung
-
-Der Workflow besitzt in Version 0.1.0 keinen produktiven Webhook und keinen automatischen Repository-Trigger.
+Der Knoten startet den Workflow ausschließlich manuell. Der Export enthält
+keinen Webhook, keinen Zeitplan und keinen Repository-Trigger.
 
 ---
 
-## Node 2 – Set Simulation Input
+## Knoten 2 – `02 – Test Input`
 
-### Typ
-
-`Set`
-
-### Aufgabe
-
-Stellt einen einzelnen freigegebenen Änderungsvorschlag als Testeingabe bereit.
-
-### Felder
+Der Code-Knoten erzeugt genau einen festen Testdatensatz:
 
 ```json
 {
@@ -190,385 +85,124 @@ Stellt einen einzelnen freigegebenen Änderungsvorschlag als Testeingabe bereit.
 }
 ```
 
+Der Export besitzt keine technische Anbindung an WF-0009, WF-0010, WF-0013
+oder eine andere externe Eingangsquelle.
+
 ---
 
-## Node 3 – Normalize Input
+## Knoten 3 – `03 – Validate and Simulate`
 
-### Typ
+Der Code-Knoten liest alle eingehenden Items und führt die folgenden Prüfungen
+und Ableitungen in dieser Reihenfolge aus:
 
-`Code`
+1. Genau ein Eingangs-Item muss vorhanden sein.
+2. `sourceSha` muss vorhanden und ein nichtleerer String sein.
+3. Alle Pflichtfelder müssen vorhanden sein. Außer `currentValue` dürfen sie
+   nicht `null`, `undefined` oder nach String-Konvertierung leer sein.
+4. `approvalStatus` muss exakt `approved` sein.
+5. `auditStatus` muss exakt `passed` sein.
+6. `mode` muss exakt `simulation` sein.
+7. `objectId` muss dem Muster `^[A-Z][A-Z0-9]*-\d{4}$` entsprechen.
+8. `path` muss die tatsächlich implementierten Pfadregeln erfüllen.
+9. `field` muss einer der Werte `status`, `name`, `description` oder `version`
+   sein.
+10. Der Knoten erzeugt `changePlan` und `patchPreview` ausschließlich im
+    Arbeitsspeicher.
+11. Der intern erzeugte Patch wird auf Übereinstimmung ausgewählter Werte und
+    `patchPreview.applied === false` geprüft.
+12. Der Knoten gibt genau ein strukturiertes Erfolgs- oder Ablehnungsobjekt aus.
 
-### Aufgabe
+Es findet keine Normalisierung der Eingangswerte statt. `sourceSha.trim()` und
+`String(...).trim()` werden nur zur Leerheitsprüfung verwendet; die ausgegebenen
+Werte werden dadurch nicht ersetzt.
 
-Übernimmt die Eingangsdaten ohne fachliche Veränderung und ergänzt die Workflow-Metadaten.
+---
 
-### Ausgabe
+## Tatsächlich implementierte Pfadprüfung
+
+`path` wird akzeptiert, wenn alle folgenden Bedingungen erfüllt sind:
+
+- Datentyp String,
+- Endung `.md`,
+- beginnt weder mit `/` noch mit `~`,
+- enthält weder `..` noch `\`,
+- enthält weder `://` noch ein Nullbyte.
+
+Der Export enthält keine ausdrückliche Prüfung auf `.git` oder andere
+geschützte Repository-Bereiche. `.git/config` wird wegen der fehlenden
+`.md`-Endung abgelehnt; daraus folgt keine allgemeine Sperre für `.git`-Pfade.
+
+---
+
+## Change Plan
+
+Nach erfolgreicher Validierung entsteht lokal:
 
 ```json
 {
-  "workflowId": "WF-0011",
-  "version": "0.1.0",
-  "mode": "simulation",
-  "input": {
-    "objectId": "FIN-0001",
-    "path": "01_Objects/Finance/FIN-0001/object.md",
-    "field": "status",
-    "currentValue": null,
-    "approvedValue": "active",
-    "approvalStatus": "approved",
-    "sourceSha": "abc123",
-    "approvedBy": "manual_review",
-    "auditStatus": "passed"
-  }
+  "operation": "replace_field_value",
+  "objectId": "FIN-0001",
+  "path": "01_Objects/Finance/FIN-0001/object.md",
+  "field": "status",
+  "from": null,
+  "to": "active",
+  "sourceSha": "abc123"
 }
 ```
 
+Der Change Plan beschreibt nur eine beabsichtigte Feldwertänderung. Er wird
+nicht auf eine Datei angewendet.
+
 ---
 
-## Node 4 – Validate Required Fields
+## Patch-Vorschau
 
-### Typ
-
-`Code`
-
-### Aufgabe
-
-Prüft:
-
-- ob genau ein Änderungsvorschlag vorliegt,
-- ob alle Pflichtfelder vorhanden sind,
-- ob Pflichtwerte nicht leer sind,
-- ob die Grundstruktur verarbeitet werden kann.
-
-### Pflichtfelder
-
-```text
-objectId
-path
-field
-currentValue
-approvedValue
-approvalStatus
-sourceSha
-approvedBy
-auditStatus
-```
-
-`currentValue` darf ausdrücklich `null` sein.
-
-### Erfolgreiche Ausgabe
+Der gleiche Code-Knoten erzeugt lokal:
 
 ```json
 {
-  "validationPassed": true,
-  "errorCode": null,
-  "message": null
+  "format": "structured_preview",
+  "target": "01_Objects/Finance/FIN-0001/object.md",
+  "field": "status",
+  "before": null,
+  "after": "active",
+  "applied": false
 }
 ```
 
-### Fehlerausgabe
-
-```json
-{
-  "validationPassed": false,
-  "errorCode": "MISSING_REQUIRED_FIELD",
-  "message": "Ein oder mehrere Pflichtfelder fehlen."
-}
-```
+Die Patch-Vorschau ist kein Datei-Patch und enthält keine ausführbare
+Schreiboperation.
 
 ---
 
-## Node 5 – Required Fields Valid?
+## Kontrollierte Fehlercodes
 
-### Typ
+| Fehlercode | Tatsächlich geprüfte Bedingung |
+|---|---|
+| `INVALID_INPUT_COUNT` | Eingangsanzahl ist nicht genau eins |
+| `SOURCE_SHA_MISSING` | `sourceSha` fehlt, ist kein String oder ist leer |
+| `MISSING_REQUIRED_FIELD` | Pflichtfeld fehlt oder besitzt keinen zulässigen Wert |
+| `APPROVAL_REQUIRED` | `approvalStatus` ist nicht `approved` |
+| `AUDIT_NOT_PASSED` | `auditStatus` ist nicht `passed` |
+| `INVALID_MODE` | `mode` ist nicht `simulation` |
+| `INVALID_OBJECT_ID` | `objectId` erfüllt das Muster nicht |
+| `INVALID_PATH` | `path` erfüllt eine implementierte Pfadbedingung nicht |
+| `INVALID_FIELD` | `field` steht nicht in der Allowlist |
+| `PATCH_VALIDATION_FAILED` | die intern erzeugte Vorschau erfüllt die Patch-Prüfung nicht |
 
-`IF`
-
-### Bedingung
-
-```text
-validationPassed ist true
-```
-
-### Verzweigung
-
-- `true` → Validate Approval
-- `false` → Build Rejected Result
-
----
-
-## Node 6 – Validate Approval
-
-### Typ
-
-`Code`
-
-### Aufgabe
-
-Prüft:
-
-- `approvalStatus` ist exakt `approved`,
-- `approvedBy` ist vorhanden und nicht leer.
-
-### Fehlercodes
-
-```text
-APPROVAL_REQUIRED
-MISSING_REQUIRED_FIELD
-```
+Kontrollierte Ablehnungen enthalten `status: rejected` und alle drei
+Schreibschutzwerte `false`. Ein zentraler sicherer Fehlerpfad für unerwartete
+JavaScript-Laufzeitfehler ist nicht implementiert.
 
 ---
 
-## Node 7 – Approval Valid?
+## Erfolgsbedingungen
 
-### Typ
+Ein Lauf erhält `status: simulated`, wenn alle Validierungen erfolgreich sind,
+`changePlan` und `patchPreview` erzeugt wurden und die interne Patch-Prüfung
+bestanden ist.
 
-`IF`
-
-### Bedingung
-
-```text
-approvalPassed ist true
-```
-
-### Verzweigung
-
-- `true` → Validate Audit
-- `false` → Build Rejected Result
-
----
-
-## Node 8 – Validate Audit
-
-### Typ
-
-`Code`
-
-### Aufgabe
-
-Prüft, ob:
-
-```text
-auditStatus = passed
-```
-
-### Fehlercode
-
-```text
-AUDIT_NOT_PASSED
-```
-
----
-
-## Node 9 – Audit Passed?
-
-### Typ
-
-`IF`
-
-### Bedingung
-
-```text
-auditPassed ist true
-```
-
-### Verzweigung
-
-- `true` → Validate Safety
-- `false` → Build Rejected Result
-
----
-
-## Node 10 – Validate Safety
-
-### Typ
-
-`Code`
-
-### Aufgabe
-
-Führt die zentralen Sicherheitsprüfungen durch.
-
-### Prüfungen
-
-1. Der Betriebsmodus ist `simulation`.
-2. `objectId` entspricht einer gültigen JaMoKo-Objekt-ID.
-3. `path` ist ein relativer Repository-Pfad.
-4. `path` enthält kein `..`.
-5. `path` verweist nicht auf `.git`.
-6. `path` enthält kein URL- oder Protokollschema.
-7. `field` ist vorhanden und zulässig.
-8. `sourceSha` ist vorhanden.
-9. Es wurde keine Schreiboperation angefordert.
-
-### Beispiel für eine gültige Objekt-ID
-
-```text
-FIN-0001
-```
-
-### Fehlercodes
-
-```text
-INVALID_MODE
-INVALID_OBJECT_ID
-INVALID_PATH
-INVALID_FIELD
-SOURCE_SHA_MISSING
-```
-
----
-
-## Node 11 – Safety Valid?
-
-### Typ
-
-`IF`
-
-### Bedingung
-
-```text
-safetyPassed ist true
-```
-
-### Verzweigung
-
-- `true` → Build Change Plan
-- `false` → Build Rejected Result
-
----
-
-## Node 12 – Build Change Plan
-
-### Typ
-
-`Code`
-
-### Aufgabe
-
-Erzeugt den geplanten Änderungsvorgang, ohne auf eine Datei zuzugreifen.
-
-### Ausgabe
-
-```json
-{
-  "changePlan": {
-    "objectId": "FIN-0001",
-    "path": "01_Objects/Finance/FIN-0001/object.md",
-    "field": "status",
-    "from": null,
-    "to": "active",
-    "sourceSha": "abc123",
-    "approvedBy": "manual_review",
-    "auditStatus": "passed",
-    "operation": "replace_field_value",
-    "executionAllowed": false
-  }
-}
-```
-
----
-
-## Node 13 – Simulate Patch
-
-### Typ
-
-`Code`
-
-### Aufgabe
-
-Erzeugt eine strukturierte Patch-Vorschau.
-
-Der Node liest und verändert keine Repository-Datei.
-
-### Beispielausgabe
-
-```json
-{
-  "simulatedPatch": {
-    "path": "01_Objects/Finance/FIN-0001/object.md",
-    "field": "status",
-    "before": null,
-    "after": "active",
-    "applied": false
-  }
-}
-```
-
-### Sicherheitswerte
-
-```json
-{
-  "fileChanged": false,
-  "commitCreated": false,
-  "pushExecuted": false
-}
-```
-
----
-
-## Node 14 – Validate Patch
-
-### Typ
-
-`Code`
-
-### Aufgabe
-
-Prüft, ob der simulierte Patch:
-
-- einen gültigen Zielpfad enthält,
-- das betroffene Feld enthält,
-- Ausgangs- und Zielwert nachvollziehbar dokumentiert,
-- nicht als angewendet markiert ist,
-- keine Schreibwirkung meldet.
-
-### Erfolgreiche Ausgabe
-
-```json
-{
-  "patchValid": true
-}
-```
-
-### Fehlercode
-
-```text
-PATCH_VALIDATION_FAILED
-```
-
----
-
-## Node 15 – Patch Valid?
-
-### Typ
-
-`IF`
-
-### Bedingung
-
-```text
-patchValid ist true
-```
-
-### Verzweigung
-
-- `true` → Build Simulated Result
-- `false` → Build Rejected Result
-
----
-
-## Node 16 – Build Simulated Result
-
-### Typ
-
-`Code`
-
-### Aufgabe
-
-Erzeugt das erfolgreiche Endergebnis des Workflows.
-
-### Ausgabe
+Das Ergebnis enthält insbesondere:
 
 ```json
 {
@@ -576,14 +210,6 @@ Erzeugt das erfolgreiche Endergebnis des Workflows.
   "version": "0.1.0",
   "mode": "simulation",
   "status": "simulated",
-  "objectId": "FIN-0001",
-  "path": "01_Objects/Finance/FIN-0001/object.md",
-  "field": "status",
-  "currentValue": null,
-  "approvedValue": "active",
-  "sourceSha": "abc123",
-  "approvedBy": "manual_review",
-  "auditStatus": "passed",
   "patchValid": true,
   "fileChanged": false,
   "commitCreated": false,
@@ -591,154 +217,29 @@ Erzeugt das erfolgreiche Endergebnis des Workflows.
 }
 ```
 
----
-
-## Node 17 – Build Rejected Result
-
-### Typ
-
-`Code`
-
-### Aufgabe
-
-Erzeugt für jeden kontrollierten Abbruch ein einheitliches Fehlerergebnis.
-
-### Ausgabe
-
-```json
-{
-  "workflowId": "WF-0011",
-  "version": "0.1.0",
-  "mode": "simulation",
-  "status": "rejected",
-  "errorCode": "APPROVAL_REQUIRED",
-  "message": "Der Änderungsvorschlag ist nicht freigegeben.",
-  "fileChanged": false,
-  "commitCreated": false,
-  "pushExecuted": false
-}
-```
+Zusätzlich enthält es die geprüften fachlichen Werte sowie `changePlan` und
+`patchPreview`.
 
 ---
 
-## Fehlerpfade
+## Sicherheitsgrenze
 
-Alle Fehlerpfade enden im Node `Build Rejected Result`.
+Der Export enthält:
 
-| Prüfstufe | Fehlercode |
-|---|---|
-| Anzahl der Eingaben ungültig | `INVALID_INPUT_COUNT` |
-| Pflichtfeld fehlt | `MISSING_REQUIRED_FIELD` |
-| Objekt-ID ungültig | `INVALID_OBJECT_ID` |
-| Pfad ungültig | `INVALID_PATH` |
-| Feld ungültig | `INVALID_FIELD` |
-| Freigabe fehlt | `APPROVAL_REQUIRED` |
-| Audit nicht bestanden | `AUDIT_NOT_PASSED` |
-| SHA fehlt | `SOURCE_SHA_MISSING` |
-| Modus ungültig | `INVALID_MODE` |
-| Patch ungültig | `PATCH_VALIDATION_FAILED` |
+- keine Credentials,
+- keinen GitHub-Knoten,
+- keinen HTTP-Knoten,
+- keinen Datei-Schreibknoten,
+- keine Git-Befehle,
+- keine Branch-, Commit-, Push- oder Pull-Request-Funktion.
+
+Alle Verarbeitung findet lokal in den beiden Code-Knoten statt. `sourceSha`
+wird nur als nichtleerer String geprüft und nicht gegen GitHub verglichen.
 
 ---
 
-## Verbindungsplan
+## Versionsabgrenzung
 
-```text
-Manual Trigger
-→ Set Simulation Input
-→ Normalize Input
-→ Validate Required Fields
-→ Required Fields Valid?
-
-Required Fields Valid? [true]
-→ Validate Approval
-→ Approval Valid?
-
-Required Fields Valid? [false]
-→ Build Rejected Result
-
-Approval Valid? [true]
-→ Validate Audit
-→ Audit Passed?
-
-Approval Valid? [false]
-→ Build Rejected Result
-
-Audit Passed? [true]
-→ Validate Safety
-→ Safety Valid?
-
-Audit Passed? [false]
-→ Build Rejected Result
-
-Safety Valid? [true]
-→ Build Change Plan
-→ Simulate Patch
-→ Validate Patch
-→ Patch Valid?
-
-Safety Valid? [false]
-→ Build Rejected Result
-
-Patch Valid? [true]
-→ Build Simulated Result
-
-Patch Valid? [false]
-→ Build Rejected Result
-```
-
----
-
-## Erfolgsbedingungen
-
-Ein Lauf erhält den Status `simulated`, wenn:
-
-- genau ein Änderungsvorschlag verarbeitet wurde,
-- alle Pflichtfelder vorhanden sind,
-- die manuelle Freigabe bestätigt ist,
-- das Audit bestanden wurde,
-- der Betriebsmodus `simulation` aktiv ist,
-- Objekt-ID, Feld und Zielpfad gültig sind,
-- der `sourceSha` dokumentiert ist,
-- der Change Plan erstellt wurde,
-- der simulierte Patch gültig ist,
-- keine Datei verändert wurde,
-- kein Commit erstellt wurde,
-- kein Push ausgeführt wurde.
-
----
-
-## Sicherheitsgarantie
-
-WF-0011 v0.1.0 enthält keinen Node, der:
-
-- Dateien schreibt,
-- Git-Befehle ausführt,
-- einen Branch erstellt,
-- einen Commit erstellt,
-- einen Push ausführt,
-- eine GitHub-API mit Schreibrechten aufruft.
-
-Der Ablauf endet immer mit einem reinen Simulationsergebnis.
-
----
-
-## Abgrenzung
-
-Nicht Bestandteil dieses Flows sind:
-
-- tatsächlicher Zugriff auf Repository-Dateien,
-- Vergleich des `sourceSha` mit GitHub,
-- Anwendung eines Patches,
-- Branch-Erstellung,
-- Commit-Erstellung,
-- Push-Ausführung,
-- Pull-Request-Erstellung,
-- Verarbeitung mehrerer Änderungsvorschläge.
-
----
-
-## Nächster Umsetzungsschritt
-
-WF-0011 v0.1.0 wurde in n8n aufgebaut, vollständig getestet und als deaktivierte Simulation veröffentlicht.
-
-Die Nodes werden zunächst mit festen Testdaten eingerichtet. Anschließend werden Erfolgs-, Ablehnungs- und Sicherheitsfälle anhand von `TESTS.md` geprüft.
+Dieses Dokument beschreibt ausschließlich den exportierten Stand v0.1.0. Die
+Datei `FLOW_v0.2.0.md` gehört zu einem noch nicht implementierten Entwurf und
+beschreibt keinen vorhandenen n8n-Workflow.
