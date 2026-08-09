@@ -112,10 +112,9 @@ Geprüfter Export:
 exports/WF-0012_GitHub_Reader_v0.1.1.json
 ```
 
-Die folgenden Tests wurden direkt gegen die im Export enthaltenen Code-Nodes
-ausgeführt. `passed-local` bestätigt die lokale Code- und Strukturkonformität.
-Credential-Anbindung und vollständige Ausführung der Testfälle in einer realen
-n8n-Instanz bleiben separat nachzuweisen.
+Die Statuswerte unterscheiden echte n8n-Laufzeittests von lokalen Code- und
+Strukturprüfungen. `passed-runtime` bestätigt eine tatsächliche Ausführung in
+n8n; `passed-local` bestätigt ausschließlich die lokale Exportprüfung.
 
 | Test-ID | Testfall | Erwartung | Status |
 |---|---|---|---|
@@ -166,11 +165,34 @@ Der Vergleich bestätigt die Exportstruktur und die fachliche Workflow-Logik.
 Separate echte Negativ- und Fehlerpfadtests in der n8n-Laufzeit bleiben als
 eigene Testfälle offen.
 
-### 7.2 Ausstehender Laufzeitnachweis
+### 7.2 Echte n8n-Runtime-Tests vom 2026-08-09
+
+| Test-ID | Testfall | Ergebnis | Status |
+|---|---|---|---|
+| `RT-001` | Unvollständiger Input ohne `path` und `ref` | `status = rejected`, `error.code = INPUT_INVALID` | `passed-runtime` |
+| `RT-002` | Nicht vorhandene Datei | `status = rejected`, `error.code = FILE_NOT_FOUND` | `passed-runtime` |
+| `RT-003` | Erfolgreicher realer GitHub-Lesevorgang | `status = read`, `mode = read-only`, `file.encoding = base64` | `passed-runtime` |
+| `RT-004` | Nicht erlaubtes Repository | `status = rejected`, `error.code = REPOSITORY_NOT_ALLOWED`; vor dem GitHub-Aufruf blockiert | `passed-runtime` |
+| `RT-005` | Ungültiger Branch beziehungsweise `ref` | `status = rejected`, `error.code = FILE_NOT_FOUND` | `passed-runtime` |
+| `RT-006` | Gültigen Standardzustand nach den Tests wiederhergestellt | Erfolgreicher realer GitHub-Lesevorgang mit `status = read` und `file.encoding = base64` | `passed-runtime` |
+
+Die Fälle `RT-001` bis `RT-006` wurden am `2026-08-09` tatsächlich in n8n
+ausgeführt und bestanden. Für jeden Fall wurden genau ein kontrollierter Output
+und folgende Schreibschutzwerte nachgewiesen:
+
+- `writeRequested = false`
+- `writeExecuted = false`
+- `commitCreated = false`
+- `pushExecuted = false`
+
+`RT-004` wurde vor dem GitHub-Aufruf blockiert. `RT-003` und `RT-006` waren
+erfolgreiche echte GitHub-Lesevorgänge. Screenshot-Nachweise wurden gesichert.
+
+### 7.3 Ausstehender Laufzeitnachweis
 
 Noch offen sind:
 
-- Ausführung aller Fälle `T-015` bis `T-030` im n8n-Laufzeitkontext,
+- Ausführung aller lokalen Fälle `T-015` bis `T-030` im n8n-Laufzeitkontext,
 - Nachweis, dass `alwaysOutputData` am Execute-Workflow-Trigger bei null vom
   aufrufenden Workflow gelieferten Items tatsächlich genau einen leeren
   Platzhalter erzeugt und dadurch den Kardinalitäts-Guard ausführt,
@@ -187,5 +209,8 @@ ohne Folgeausführung beendet, muss der aufrufende Workflow als kleinste
 Alternative stets genau ein Eingangsobjekt übergeben; andernfalls ist der
 Ein-Objekt-Ausgabevertrag für diesen Fall technisch nicht erfüllbar.
 
-Bis diese Punkte abgeschlossen sind, besitzt `v0.1.1` einen lokal geprüften
-Export, aber noch keinen vollständigen operativen n8n-Konformitätsnachweis.
+Die sechs Runtime-Fälle `RT-001` bis `RT-006` sind nicht mehr offen. Die
+ursprünglichen lokalen Fälle `T-015` bis `T-030` bleiben von diesen zusätzlichen
+Runtime-Fällen unberührt. Bis die verbleibenden Punkte abgeschlossen sind,
+besitzt `v0.1.1` einen lokal geprüften Export und sechs bestandene echte
+Runtime-Fälle, aber noch keinen vollständigen operativen n8n-Konformitätsnachweis.
