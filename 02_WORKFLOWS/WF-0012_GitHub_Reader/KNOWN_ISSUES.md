@@ -92,19 +92,22 @@ Die folgenden Punkte sind offene Voraussetzungen des Entwurfs
 `v0.2.0/draft/not-started`. Sie sind keine rückwirkenden Known Issues des
 veröffentlichten Stands `v0.1.1/released` und ändern dessen Freigabestatus nicht.
 
-- Es existiert noch kein lokaler `ORT-001`-Runner.
-- Die statische Aliasauflösung sowie Datei- und Kommando-Allowlist sind noch
-  nicht technisch umgesetzt oder unabhängig geprüft.
-- Die endgültigen Ablehnungsgründe und das finale sanitisierte Report-Schema
-  sind noch nicht freigegeben.
-- Zentraler Output Sanitizer, Stability Guard und Single Output Boundary sind
-  noch nicht implementiert oder getestet.
+- Die dokumentarischen Gates für Aliasauflösung, lokale Repository-Identität,
+  Datei-Allowlist, Kommando-Allowlist, Exitcode-Zuordnung, relevante
+  Snapshotdefinition, neun Ablehnungsgründe und zwei geschlossene Report-
+  Schemata sind festgelegt. Ihre fachliche Implementierungsfreigabe muss in
+  einem erneuten Audit bewertet werden.
+- Es existiert noch kein lokaler `ORT-001`-Runner; die dokumentierten Grenzen
+  sind daher weder technisch umgesetzt noch getestet.
+- Output Sanitizer, Safe Failure Builder, Stability Guard und Single Output
+  Boundary sind dokumentarisch geschlossen, aber nicht implementiert oder
+  getestet.
 - Die Seiteneffektfreiheit bei unverändert vorhandenen `clean`- und `dirty`-
   Zuständen ist für einen operativen Runner noch nicht nachgewiesen.
 - Die spätere Evidenzablage muss technisch und organisatorisch vom
   Read-only-Lauf getrennt bleiben; ein freigegebener Mechanismus existiert noch
   nicht.
-- Die geplanten v0.2.0-Testfälle wurden noch nicht ausgeführt.
+- Die 80 geplanten v0.2.0-Testfälle wurden noch nicht ausgeführt.
 
 Solange einer dieser Punkte offen ist, darf `ORT-001` nicht ausgeführt und
 `v0.2.0` nicht als implementiert, getestet oder veröffentlicht bezeichnet

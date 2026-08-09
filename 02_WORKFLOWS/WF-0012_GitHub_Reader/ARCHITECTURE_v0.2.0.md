@@ -40,10 +40,12 @@ Architektur- oder Laufzeitnachweis für `ORT-001`.
 | Komponente | Aufgabe | Darf nicht |
 |---|---|---|
 | Input Gate | genau ein Objekt und die zwei festen Eingabewerte prüfen | Werte ergänzen oder normalisieren |
-| Trusted Target Resolver | freigegebenen Alias aus statischer lokaler Konfiguration auflösen | freie oder ausgegebene absolute Pfade akzeptieren |
-| Repository Guard | Git-Repository und unterstützten symbolischen Branch prüfen | Remote-Kommandos ausführen |
+| Trusted Target Resolver | einzigen Alias auf das kanonisch geprüfte Prozessstart-Arbeitsverzeichnis auflösen | freie, relative, mehrdeutige oder ausgegebene absolute Pfade akzeptieren |
+| Repository Guard | reales `.git` samt lokalem, nicht alternativem Object Store, Git-Toplevel und unterstützten Repository-/Branchzustand prüfen | Remote-Kommandos ausführen |
+| Identity Marker Gate | festen v0.1.1-Markerpfad und dessen festgelegten SHA-256 prüfen | Markerabweichung als gültiges Ziel behandeln |
 | State Snapshot Reader | internen Vorher-Zustand und `clean`/`dirty` lesen | Zustand verändern oder Pfadlisten ausgeben |
 | File Scope Guard | feste Datei-Allowlist, Repository-Grenze und regulären Dateityp prüfen | Symlinks oder freie Pfade zulassen |
+| Read-only Command Executor | ausschließlich die acht Git-Argument-Suffixe und Dateisystem-Leseoperationen aus der Spezifikation direkt ohne Shell ausführen | andere Argumente, Shell, Netzwerk oder Schreiboperationen starten |
 | Metadata Reader | höchstens drei zwölfstellige Commit-Kurz-IDs und erlaubte Dateimetadaten lesen | Inhalte, Commit-Texte, Autoren oder Remotes ausgeben |
 | Stability Guard | internen Vorher-/Nachher-Zustand exakt vergleichen | Abweichungen als Erfolg behandeln |
 | Result Builder | akzeptierten, neutralen oder abgelehnten Zustand bilden | Teilresultate nach Fehler ausgeben |
@@ -60,8 +62,11 @@ Eine Komponente zur Report-Persistenz gehört ausdrücklich nicht zu `ORT-001`.
 ```text
 untrusted invocation
   -> Input Gate
-  -> trusted static target configuration
+  -> canonical process-start working directory
+  -> Repository Guard and Git-Toplevel
+  -> fixed identity marker
   -> local repository read boundary
+  -> closed direct-process command boundary
   -> internal snapshot and metadata
   -> Output Sanitizer
   -> one sanitized in-memory result
@@ -81,22 +86,32 @@ Die geplante Entscheidungslogik lautet:
 |---|---|---|
 | unterstütztes Repository und `clean` | accept | `completed` / `accepted` |
 | unterstütztes Repository und `dirty` | neutral report | `completed` / `reported-neutral` |
-| kein Git-Repository | reject | minimale `rejected`-Ausgabe |
-| nicht unterstützter oder instabiler Zustand | reject | minimale `rejected`-Ausgabe |
-| Sanitizer- oder interner Ausgabefehler | fail closed | statische minimale Ablehnung ohne dynamische Daten |
+| ungültige Eingangsstruktur | reject | `INPUT_INVALID` |
+| formal gültiger, aber nicht erlaubter Alias/Profilwert oder Marker | reject | `TARGET_NOT_ALLOWED` |
+| nicht eindeutige oder nicht kanonische Zielauflösung | reject | `TARGET_RESOLUTION_FAILED` |
+| kein Git-Repository | reject | `NOT_A_GIT_REPOSITORY` |
+| nicht unterstützter Repository- oder Branchzustand | reject | `REPOSITORY_STATE_UNSUPPORTED` |
+| Datei-Allowlist- oder Pfadgrenze verletzt | reject | `FILE_SCOPE_INVALID` |
+| erlaubte lokale Leseoperation technisch fehlgeschlagen | reject | `LOCAL_READ_FAILED` |
+| Vorher-/Nachher-Snapshot abweichend | reject | `STATE_CHANGED_DURING_RUN` |
+| Sanitizer-, Schema-, Single-Output- oder unerwarteter interner Fehler | fail closed | statisches `SAFE_FAILURE` |
 
-Die abschließenden öffentlichen Ablehnungsgründe einschließlich des statischen
-Safe-Failure-Grunds sind noch nicht freigegeben. Es werden keine
-v0.1.1-Fehlercodes für lokale Zustände umgedeutet.
+Andere öffentliche Gründe sind unzulässig. Die Reihenfolge und genaue
+Zuordnung aus `SPECIFICATION_v0.2.0.md` und `FLOW_v0.2.0.md` sind verbindlich.
+Es werden keine v0.1.1-Fehlercodes für lokale Zustände umgedeutet.
 
 ---
 
 ## 6. Stabilitätsgrenze
 
-Der Runner muss den vollständigen relevanten Git-Zustand intern unmittelbar vor
-und nach den erlaubten Leseoperationen erfassen. Beide Snapshots müssen
-bytegenau identisch sein. Die internen Pfade dürfen den Sanitizer nicht
-passieren.
+Der Runner muss das in Abschnitt 9.5 der Spezifikation vollständig definierte
+geordnete Tupel unmittelbar vor und nach den erlaubten Leseoperationen erfassen.
+Es umfasst kanonische Root und Toplevel, `.git`- und lokale Object-Store-
+Identität samt bestätigter Abwesenheit eines alternativen Object Stores, Bare-Wert,
+Branchbytes, vollständigen HEAD, Index- und Statusrohbytes, höchstens drei
+vollständige Commit-IDs sowie `lstat`- und SHA-256-Werte aller acht Dateien.
+Beide Snapshots müssen bytegenau identisch sein. Die internen Pfade und Rohwerte
+dürfen den Sanitizer nicht passieren.
 
 Eine Abweichung bedeutet nicht, dass der Runner sie verursacht hat. Sie macht
 den Lauf jedoch nicht reproduzierbar und muss deshalb zur kontrollierten
@@ -128,6 +143,13 @@ Bei identischer Eingabe und identischem internem Vorher-/Nachher-Snapshot muss
 das Ergebnis feldgleich sein. Eine kanonische JSON-Serialisierung ist vor einem
 byteidentischen Artefaktvergleich gesondert festzulegen.
 
+Der Sanitizer gibt ausschließlich die zwei geschlossenen Schemata aus der
+Spezifikation aus. Branchwerte werden ausschließlich als SHA-256 repräsentiert;
+Pfade sind ausschließlich feste Allowlist-Konstanten. Commit- und Datei-Hashes,
+Integer und statische Enumwerte sind die einzigen weiteren dynamischen Werte.
+Unbekannte Felder werden nicht entfernt oder ignoriert, sondern lösen vor
+Ausgabe das statische `SAFE_FAILURE`-Objekt aus.
+
 ---
 
 ## 9. Verbotene Komponenten und Aktionen
@@ -139,22 +161,26 @@ Nicht zulässig sind:
 - Git-Remote-Kommandos,
 - Datei-, Repository-, Commit-, Push- oder Tag-Writer,
 - automatische Log- oder Reportpersistenz,
-- Shell-Kommandos außerhalb einer abschließend geprüften Lese-Allowlist,
+- jede Shell sowie Kommandos oder Argumente außerhalb der geschlossenen
+  Allowlist aus Abschnitt 9 der Spezifikation,
 - Aufruf von WF-0011 oder einem anderen Workflow.
 
 ---
 
 ## 10. Freigabegates vor Implementierung
 
-1. Spezifikation, Architektur, Flow und Testplan sind widerspruchsfrei geprüft.
-2. Alias- und Datei-Allowlist sind abschließend freigegeben.
-3. Zulässige lokale Lesekommandos und ihre Fehlergrenzen sind festgelegt.
-4. Report-Schema und Ablehnungsgründe sind abschließend festgelegt.
-5. Sanitizer-, Stabilitäts- und Single-Output-Konzept sind testbar beschrieben.
-6. Die organisatorische Trennung der späteren Evidenzablage ist bestätigt.
+1. Spezifikation, Architektur, Flow und Testplan sind nach den vorliegenden
+   Ergänzungen erneut widerspruchsfrei auditiert.
+2. Die Implementierung beschränkt sich nachweisbar auf den einzigen Alias, die
+   feste Datei-Allowlist und die geschlossene Kommando-Allowlist.
+3. Report Builder, Sanitizer, Safe Failure Builder und Single Output Boundary
+   setzen die geschlossenen Schemata ohne Zusatzfelder um.
+4. Alle geplanten statischen, isolierten und lokalen Tests sind bestanden.
+5. Die organisatorische Trennung der späteren Evidenzablage bleibt bestätigt.
 
-Ohne diese Gates darf keine Implementierung begonnen und `ORT-001` nicht
-ausgeführt werden.
+Gate 1 entscheidet über die fachliche Implementierungsfreigabe. Die Gates 2 bis
+5 entscheiden anschließend über die operative Freigabe; ohne sie darf
+`ORT-001` nicht ausgeführt werden.
 
 ---
 

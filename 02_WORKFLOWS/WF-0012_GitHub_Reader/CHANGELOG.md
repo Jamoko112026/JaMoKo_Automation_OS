@@ -59,6 +59,22 @@ Das Format orientiert sich an **Keep a Changelog** und verwendet semantische Ver
   Evidenzablage bleibt eine getrennte, ausdrücklich zu autorisierende
   Dokumentationshandlung
 - Der veröffentlichte Status `v0.1.1/released` bleibt unverändert
+- Vor-Implementierungs-Gates des v0.2.0-Entwurfs dokumentarisch geschlossen:
+  neun feste Ablehnungsgründe mit Zustandsmatrix, zwei disjunkte Report-Schemata
+  ohne optionale oder unbekannte Felder, gehashte Branchrepräsentation und
+  statische Safe-Failure-Ausgabe
+- Lokale Zielidentität über kanonisches Prozessstart-Arbeitsverzeichnis,
+  Git-Toplevel, reale `.git`- und lokale Object-Store-Verzeichnisse ohne
+  Alternates sowie festen v0.1.1-Identitätsmarker definiert; Symlink-, Alias-
+  und Mehrdeutigkeitsfälle eindeutig zugeordnet
+- Direkten Read-only-Ausführungsvertrag mit acht erlaubten Git-Aufrufen,
+  geschlossener Kindprozessumgebung, Exitcode- und Formatmatrix, Zeit- und
+  Ausgabelimits sowie vollständigem Vorher-/Nachher-Snapshot festgelegt
+- Deterministisches Sanitizing auf Konstanten, feste Allowlist-Pfade,
+  zwölfstellige Commit-IDs, Integer und SHA-256-Repräsentationen begrenzt
+- Testvertrag von 35 auf 80 ausschließlich geplante, nicht ausgeführte Fälle
+  erweitert und die zirkuläre Vorbedingung einer bereits geprüften
+  Implementierung vor dem ersten v0.2.0-Test entfernt
 
 ### Testing
 
