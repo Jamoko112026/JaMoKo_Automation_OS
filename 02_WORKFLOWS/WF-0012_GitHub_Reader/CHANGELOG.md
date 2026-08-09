@@ -45,6 +45,15 @@ Das Format orientiert sich an **Keep a Changelog** und verwendet semantische Ver
 
 ### Testing
 
+- Separaten strikt lokalen Repository-Read-only-Test `LRT-001` am 2026-08-09
+  ausgeführt und als sanitisierten Report unter
+  `exports/WF-0012_local-read-only-test-report_2026-08-09.json` dokumentiert;
+  geprüft wurden ausschließlich Git-Erkennung, Branch, Working-Tree-Status,
+  drei letzte Commit-Kurz-Hashes mit Betreff und Metadaten acht explizit
+  erlaubter WF-0012-Dateien
+- Der lokale Test enthielt keine Datei-Inhalte, Remotes, Credentials oder
+  Secrets und führte weder n8n, GitHub API/HTTP noch Write-, Commit-, Push- oder
+  Tag-Operationen aus; er erweitert den veröffentlichten `v0.1.1`-Vertrag nicht
 - Lokale Code- und Strukturtests `T-015` bis `T-030` für den v0.1.1-Export
   erfolgreich durchgeführt
 - Runtime-Export

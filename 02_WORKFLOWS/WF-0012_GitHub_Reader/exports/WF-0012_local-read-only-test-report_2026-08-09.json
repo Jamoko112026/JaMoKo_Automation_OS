@@ -1,0 +1,110 @@
+{
+  "report_type": "local-read-only-test",
+  "workflow": "WF-0012_GitHub_Reader",
+  "test_id": "LRT-001",
+  "test_date": "2026-08-09",
+  "scope": "currently-open-local-repository",
+  "result": "passed-local-read-only",
+  "contract_boundary": "This report documents a separate local repository read test. It is not an n8n workflow export and does not extend the published WF-0012 v0.1.1 GitHub Reader contract.",
+  "collection_operations": [
+    "git rev-parse --is-inside-work-tree",
+    "git branch --show-current",
+    "git status --porcelain=v1 --untracked-files=all, reduced to clean or dirty",
+    "git log -3 with short SHA and subject only",
+    "regular-file and byte-size inspection for explicitly allowed files",
+    "SHA-256 calculation for explicitly allowed files"
+  ],
+  "repository_observation": {
+    "git_repository_detected": true,
+    "current_branch": "main",
+    "working_tree_at_read_time": "clean",
+    "recent_commits": [
+      {
+        "short_sha": "a9d34df",
+        "subject": "Plan WF-0011 v0.2.0 safety boundaries"
+      },
+      {
+        "short_sha": "26087bc",
+        "subject": "Consolidate WF-0011 v0.1.0 documentation"
+      },
+      {
+        "short_sha": "fca16b2",
+        "subject": "Document WF-0012 runtime test evidence"
+      }
+    ]
+  },
+  "allowed_files": [
+    {
+      "path": "02_WORKFLOWS/WF-0012_GitHub_Reader/README.md",
+      "exists": true,
+      "type": "regular-file",
+      "size_bytes": 1562,
+      "sha256": "bf885bc838e0290c66c6e29daed39268907635749a2f868b25de2fa414dd514c"
+    },
+    {
+      "path": "02_WORKFLOWS/WF-0012_GitHub_Reader/SPECIFICATION.md",
+      "exists": true,
+      "type": "regular-file",
+      "size_bytes": 11647,
+      "sha256": "92cffece1bedc03b7a97565c4fddd7ba7a4dd7339c9e0349dbfcb87c77b2d924"
+    },
+    {
+      "path": "02_WORKFLOWS/WF-0012_GitHub_Reader/ARCHITECTURE.md",
+      "exists": true,
+      "type": "regular-file",
+      "size_bytes": 12486,
+      "sha256": "4deb5e1ad5fed1e313a7ab3e146831342293f413c6fab282c9b2ffab7f7ce1bb"
+    },
+    {
+      "path": "02_WORKFLOWS/WF-0012_GitHub_Reader/FLOW.md",
+      "exists": true,
+      "type": "regular-file",
+      "size_bytes": 784,
+      "sha256": "43b98372aa8f32d0bd47adf7b0509f9daab2ab187e3a7e304a2b415fa51f4177"
+    },
+    {
+      "path": "02_WORKFLOWS/WF-0012_GitHub_Reader/TESTS.md",
+      "exists": true,
+      "type": "regular-file",
+      "size_bytes": 9945,
+      "sha256": "bdb7b8bf9f98c59f0dd0e17ed810f5256c8f71351f393336fd7c5f84610c3f04"
+    },
+    {
+      "path": "02_WORKFLOWS/WF-0012_GitHub_Reader/CHANGELOG.md",
+      "exists": true,
+      "type": "regular-file",
+      "size_bytes": 9006,
+      "sha256": "f2d65e067a20d9ea4627744a3aa9b684c9b2745d9634cf4f3bdd3159b98c7544"
+    },
+    {
+      "path": "02_WORKFLOWS/WF-0012_GitHub_Reader/KNOWN_ISSUES.md",
+      "exists": true,
+      "type": "regular-file",
+      "size_bytes": 2535,
+      "sha256": "01012f025696fccead6d8c58cd43a8c04546c03f35c224fefba82288e41c493e"
+    },
+    {
+      "path": "02_WORKFLOWS/WF-0012_GitHub_Reader/exports/WF-0012_GitHub_Reader_v0.1.1.json",
+      "exists": true,
+      "type": "regular-file",
+      "size_bytes": 21424,
+      "sha256": "6a46efc2d85d949e743eb062400d8caea793bcaadd53e2e21b7751e9d97601bb"
+    }
+  ],
+  "sanitization": {
+    "repository_relative_paths_only": true,
+    "file_contents_recorded": false,
+    "remote_urls_read_or_recorded": false,
+    "credentials_read_or_recorded": false,
+    "tokens_or_secrets_recorded": false
+  },
+  "actions_during_read_phase": {
+    "repository_files_modified": false,
+    "github_api_or_http_called": false,
+    "credentials_used": false,
+    "commit_created": false,
+    "push_executed": false,
+    "tag_created_or_changed": false,
+    "writer_behavior_executed": false
+  }
+}

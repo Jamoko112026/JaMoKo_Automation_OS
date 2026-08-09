@@ -8,7 +8,8 @@ Typ: `Reader`
 
 Die Abschnitte 1 bis 6 dokumentieren die abgeschlossenen Tests von `v0.1.0`.
 Abschnitt 7 dokumentiert den gesonderten Konformitätsnachweis des neuen
-`v0.1.1`-Exports.
+`v0.1.1`-Exports. Abschnitt 8 dokumentiert einen davon getrennten, strikt
+lokalen Read-only-Test des aktuell geöffneten Repositorys.
 
 ---
 
@@ -214,3 +215,48 @@ ursprünglichen lokalen Fälle `T-015` bis `T-030` bleiben von diesen zusätzlic
 Runtime-Fällen unberührt. Bis die verbleibenden Punkte abgeschlossen sind,
 besitzt `v0.1.1` einen lokal geprüften Export und sechs bestandene echte
 Runtime-Fälle, aber noch keinen vollständigen operativen n8n-Konformitätsnachweis.
+
+---
+
+## 8. Lokaler Repository-Read-only-Test
+
+### 8.1 LRT-001 vom 2026-08-09
+
+`LRT-001` ist ein separater lokaler Nachweis und kein Lauf des n8n-Exports. Der
+Test erweitert weder den veröffentlichten `v0.1.1`-Ausgabevertrag noch den
+zulässigen GitHub-Reader-Betrieb.
+
+| Test-ID | Testfall | Erwartung | Ergebnis | Status |
+|---|---|---|---|---|
+| `LRT-001` | Sanitisiertes Lesen des aktuell geöffneten lokalen Repositorys | Git-Erkennung, Branch, sauber/dirty-Status, drei letzte Commit-Kurz-Hashes mit Betreff sowie Metadaten explizit erlaubter WF-0012-Dateien; keine Remote-, Inhalts- oder Credential-Daten | Repository erkannt, Branch `main`, Working Tree am Lesezeitpunkt `clean`; alle acht erlaubten Dateien vorhanden | `passed-local-read-only` |
+
+Explizit erlaubt waren ausschließlich:
+
+- `README.md`
+- `SPECIFICATION.md`
+- `ARCHITECTURE.md`
+- `FLOW.md`
+- `TESTS.md`
+- `CHANGELOG.md`
+- `KNOWN_ISSUES.md`
+- `exports/WF-0012_GitHub_Reader_v0.1.1.json`
+
+Pro erlaubter Datei wurden nur repository-relativer Pfad, Existenz,
+regulärer Dateityp, Byte-Größe und SHA-256 erfasst. Datei-Inhalte wurden nicht
+in den Report übernommen. Vollständige oder sanitisierte Git-Remotes wurden
+weder gelesen noch ausgegeben.
+
+Während der Lesephase wurden keine Repository-Dateien geändert, kein n8n-Workflow
+ausgeführt, kein GitHub-API- oder HTTP-Zugriff ausgelöst, keine Credentials
+verwendet und keine Write-, Commit-, Push- oder Tag-Operation ausgeführt. Die
+anschließende Erstellung dieses Nachweises ist von der geprüften Lesephase
+getrennt.
+
+Sanitisierter Report:
+
+```text
+exports/WF-0012_local-read-only-test-report_2026-08-09.json
+```
+
+Der Test ändert weder die technische Exportkonformität noch den Release-Status:
+Der Dokumentvertrag und der veröffentlichte Workflow-Export bleiben `v0.1.1`.
