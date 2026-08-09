@@ -114,7 +114,7 @@ exports/WF-0012_GitHub_Reader_v0.1.1.json
 
 Die folgenden Tests wurden direkt gegen die im Export enthaltenen Code-Nodes
 ausgeführt. `passed-local` bestätigt die lokale Code- und Strukturkonformität.
-Import, Credential-Anbindung und vollständige Ausführung in einer realen
+Credential-Anbindung und vollständige Ausführung der Testfälle in einer realen
 n8n-Instanz bleiben separat nachzuweisen.
 
 | Test-ID | Testfall | Erwartung | Status |
@@ -140,11 +140,36 @@ Die lokalen Tests von `T-027` bis `T-030` führen den Kardinalitäts-Code mit nu
 einem und zwei Items aus und prüfen Ausgangsanzahl, Fehlerhülle und den jeweils
 erreichbaren Kontrollfluss. Sie führen keinen echten GitHub-Aufruf aus.
 
-### 7.1 Ausstehender Laufzeitnachweis
+### 7.1 Runtime-Exportvergleich vom 2026-08-09
+
+Verglichener Runtime-Export:
+
+```text
+exports/WF-0012_GitHub_Reader_v0.1.1-runtime-test-2_2026-08-09.json
+```
+
+Ergebnis: `passed-runtime-export`
+
+Der Runtime-Export entspricht dem veröffentlichten `v0.1.1`-Export fachlich
+vollständig. Nachgewiesen wurden:
+
+- exakt 12 Knoten einschließlich Execute Workflow Trigger,
+- identischer Cardinality Guard und Cardinality Router,
+- identische Logik der Knoten 07 und 08,
+- ausschließlich lesender GitHub-Zugriff per HTTP GET,
+- vorhandener Fehlerpfad über `continueRegularOutput`,
+- `file.encoding = "base64"` in der vertraglichen Erfolgsausgabe,
+- alle vier Schreibschutzwerte immer `false`,
+- keine Writer-, Commit- oder Push-Funktion.
+
+Der Vergleich bestätigt die Exportstruktur und die fachliche Workflow-Logik.
+Separate echte Negativ- und Fehlerpfadtests in der n8n-Laufzeit bleiben als
+eigene Testfälle offen.
+
+### 7.2 Ausstehender Laufzeitnachweis
 
 Noch offen sind:
 
-- Import des bereinigten Exports in eine kompatible n8n-Instanz,
 - Ausführung aller Fälle `T-015` bis `T-030` im n8n-Laufzeitkontext,
 - Nachweis, dass `alwaysOutputData` am Execute-Workflow-Trigger bei null vom
   aufrufenden Workflow gelieferten Items tatsächlich genau einen leeren

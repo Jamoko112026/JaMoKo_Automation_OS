@@ -47,9 +47,18 @@ Das Format orientiert sich an **Keep a Changelog** und verwendet semantische Ver
 
 - Lokale Code- und Strukturtests `T-015` bis `T-030` für den v0.1.1-Export
   erfolgreich durchgeführt
-- Operativer Import- und Laufzeitnachweis in n8n bleibt offen
+- Runtime-Export
+  `exports/WF-0012_GitHub_Reader_v0.1.1-runtime-test-2_2026-08-09.json` am
+  2026-08-09 mit dem veröffentlichten `v0.1.1`-Export verglichen; fachliche
+  Übereinstimmung der vollständigen Workflow-Logik bestätigt
+- Dabei 12 Knoten, Execute Workflow Trigger, Cardinality Guard und Router,
+  identische Knoten 07 und 08, HTTP GET-only, `continueRegularOutput`,
+  `file.encoding = "base64"`, vier Schreibschutzwerte mit `false` sowie das
+  Fehlen jeder Writer-, Commit- oder Push-Funktion nachgewiesen
+- Operativer Laufzeitnachweis der noch ausstehenden Testfälle in n8n bleibt offen
 - Laufzeitnachweis der Null-Item-Semantik von `alwaysOutputData` am
   Execute-Workflow-Trigger bleibt ausdrücklich offen
+- Separate echte Negativ- und Fehlerpfadtests in der n8n-Laufzeit bleiben offen
 
 ### Geplant
 
@@ -57,9 +66,10 @@ Das Format orientiert sich an **Keep a Changelog** und verwendet semantische Ver
   Testnachweisen unter `screenshots/` ablegen
 - GitHub-Credential-Berechtigungen dokumentieren
 
-Die technische Export-Konformität ist damit separat offen. Die Veröffentlichung
-des `v0.1.1`-Dokumentvertrags behauptet bis zu diesem Nachweis keine vollständig
-operative Umsetzung.
+Die Exportstruktur und fachliche Workflow-Logik des Runtime-Exports entsprechen
+dem veröffentlichten `v0.1.1`-Export. Bis die separaten echten Negativ- und
+Fehlerpfadtests abgeschlossen sind, wird weiterhin keine vollständig operative
+Umsetzung behauptet.
 
 ---
 
