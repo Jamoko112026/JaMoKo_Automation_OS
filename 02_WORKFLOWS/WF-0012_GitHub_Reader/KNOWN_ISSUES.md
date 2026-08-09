@@ -83,3 +83,29 @@ Diese Einschränkungen verletzen weder die Kernfunktion noch das Read-only-Prinz
 Freigabeblockierende Known Issues: `0`
 Sicherheitskritische Known Issues: `0`
 Bewertung: `release-ready`
+
+---
+
+## 8. Planungsgrenzen für v0.2.0
+
+Die folgenden Punkte sind offene Voraussetzungen des Entwurfs
+`v0.2.0/draft/not-started`. Sie sind keine rückwirkenden Known Issues des
+veröffentlichten Stands `v0.1.1/released` und ändern dessen Freigabestatus nicht.
+
+- Es existiert noch kein lokaler `ORT-001`-Runner.
+- Die statische Aliasauflösung sowie Datei- und Kommando-Allowlist sind noch
+  nicht technisch umgesetzt oder unabhängig geprüft.
+- Die endgültigen Ablehnungsgründe und das finale sanitisierte Report-Schema
+  sind noch nicht freigegeben.
+- Zentraler Output Sanitizer, Stability Guard und Single Output Boundary sind
+  noch nicht implementiert oder getestet.
+- Die Seiteneffektfreiheit bei unverändert vorhandenen `clean`- und `dirty`-
+  Zuständen ist für einen operativen Runner noch nicht nachgewiesen.
+- Die spätere Evidenzablage muss technisch und organisatorisch vom
+  Read-only-Lauf getrennt bleiben; ein freigegebener Mechanismus existiert noch
+  nicht.
+- Die geplanten v0.2.0-Testfälle wurden noch nicht ausgeführt.
+
+Solange einer dieser Punkte offen ist, darf `ORT-001` nicht ausgeführt und
+`v0.2.0` nicht als implementiert, getestet oder veröffentlicht bezeichnet
+werden.

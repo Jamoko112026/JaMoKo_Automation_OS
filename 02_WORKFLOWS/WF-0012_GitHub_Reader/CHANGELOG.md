@@ -43,6 +43,23 @@ Das Format orientiert sich an **Keep a Changelog** und verwendet semantische Ver
   Null-Item-Übergabe den Kardinalitäts-Guard über einen leeren Platzhalter
   erreichen kann
 
+### Planning
+
+- Separaten Dokumentsatz aus `SPECIFICATION_v0.2.0.md`,
+  `ARCHITECTURE_v0.2.0.md`, `FLOW_v0.2.0.md` und `TESTS_v0.2.0.md` für den
+  geplanten lokalen Operational Read-only Run `ORT-001` angelegt
+- `v0.2.0` durchgehend als `draft/not-started` abgegrenzt; keine
+  Implementierung, kein Workflow-Export und kein operativer Lauf werden
+  behauptet
+- Lokale Eingabe-, Repository-Zustands-, Datenumfangs-, Sanitizer-,
+  Stabilitäts-, Single-Output- und Seiteneffektgrenzen geplant
+- `LRT-001` bis `LRT-003` ausschließlich als bestehende Testnachweise und nicht
+  als operative ORT-Ausführungen eingeordnet
+- Automatische Reportpersistenz aus `ORT-001` ausgeschlossen; eine spätere
+  Evidenzablage bleibt eine getrennte, ausdrücklich zu autorisierende
+  Dokumentationshandlung
+- Der veröffentlichte Status `v0.1.1/released` bleibt unverändert
+
 ### Testing
 
 - Separaten strikt lokalen Repository-Read-only-Test `LRT-001` am 2026-08-09

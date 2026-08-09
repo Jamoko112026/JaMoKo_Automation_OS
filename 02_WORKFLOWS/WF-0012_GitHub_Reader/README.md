@@ -7,12 +7,32 @@
 | Workflow-ID | `WF-0012` |
 | Name | GitHub Reader |
 | Typ | Reader |
-| Version | `v0.1.0` |
+| Version | `v0.1.1` |
 | Status | `released` |
 | Plattform | n8n |
 | Betriebsmodus | `read-only` |
 | Verantwortlich | JaMoKo |
 | Erstellt | 2026-08-05 |
+
+---
+
+## Versionsabgrenzung
+
+Der veröffentlichte WF-0012-Vertrag und der veröffentlichte Workflow-Export
+bleiben `v0.1.1/released`.
+
+Der gesonderte Dokumentsatz für `v0.2.0` plant ausschließlich den lokalen
+Operational Read-only Run `ORT-001`:
+
+- `SPECIFICATION_v0.2.0.md`
+- `ARCHITECTURE_v0.2.0.md`
+- `FLOW_v0.2.0.md`
+- `TESTS_v0.2.0.md`
+
+Alle vier Dokumente haben den Status `draft/not-started`. Es existieren weder
+eine v0.2.0-Implementierung noch ein v0.2.0-Workflow-Export oder ein
+ausgeführter `ORT-001`. Die Nachweise `LRT-001` bis `LRT-003` bleiben
+eigenständige lokale Testnachweise und sind keine operativen Läufe.
 
 ---
 
