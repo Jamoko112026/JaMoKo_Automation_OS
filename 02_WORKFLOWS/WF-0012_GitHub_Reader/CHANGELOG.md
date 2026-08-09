@@ -63,6 +63,16 @@ Das Format orientiert sich an **Keep a Changelog** und verwendet semantische Ver
   bestätigt; keine n8n-, Netzwerk-, Credential-, Remote-, Write-, Commit-,
   Push- oder Tag-Operation ausgeführt und keine Vertrags- oder Versionsänderung
   vorgenommen
+- Strikt lokalen Nicht-Git-Test `LRT-003` am 2026-08-09 in einem leeren
+  temporären Ordner außerhalb des Ziel-Repositories durchgeführt; fehlendes
+  Git-Repository kontrolliert erkannt und neutral als `rejected-local`
+  abgelehnt, ohne einen neuen WF-0012-Fehlercode zu definieren
+- Temporären Ordner anschließend vollständig entfernt und den unverändert
+  sauberen Ziel-Working-Tree vor Erstellung des sanitisierten Reports
+  `exports/WF-0012_local-read-only-test-report_LRT-003_2026-08-09.json`
+  bestätigt; keine absoluten Pfade, Inhalte, Remotes, Credentials oder Secrets
+  dokumentiert und keine n8n-, Netzwerk-, Write-, Commit-, Push- oder
+  Tag-Operation ausgeführt
 - Lokale Code- und Strukturtests `T-015` bis `T-030` für den v0.1.1-Export
   erfolgreich durchgeführt
 - Runtime-Export

@@ -297,3 +297,37 @@ exports/WF-0012_local-read-only-test-report_LRT-002_2026-08-09.json
 
 Der Dokumentvertrag und der veröffentlichte Workflow-Export bleiben
 `v0.1.1/released`.
+
+### 8.3 LRT-003 vom 2026-08-09
+
+`LRT-003` prüft ausschließlich lokal die sichere Erkennung eines Ordners, der
+kein Git-Repository ist. Der Test ist kein Lauf des n8n-Exports, definiert
+keinen neuen WF-0012-Fehlercode und erweitert den veröffentlichten
+`v0.1.1`-Vertrag nicht.
+
+| Test-ID | Testfall | Erwartung | Ergebnis | Status |
+|---|---|---|---|---|
+| `LRT-003` | Leerer temporärer Nicht-Git-Ordner außerhalb des Ziel-Repositories | Kein Git-Repository erkennen und neutral ablehnen; keine Änderung am Testordner oder Ziel-Repository | Git-Erkennung schlug kontrolliert mit Rückgabecode `128` fehl; Ergebnis `rejected-local` mit Grund `not-a-git-repository` | `passed-local-read-only` |
+
+Der Test-Harness erzeugte einen leeren temporären Ordner außerhalb des
+Ziel-Repositories. Dessen absoluter Pfad wurde weder ausgegeben noch
+dokumentiert. Der Reader-Schritt führte ausschließlich die lokale
+Git-Repository-Erkennung gegen diesen Ordner aus. Die rohe Git-Fehlerausgabe
+wurde unterdrückt und nicht in den Report übernommen.
+
+Der Ordner war vor und nach dem Reader-Schritt leer. Der Reader änderte weder
+den Testordner noch das Ziel-Repository. Der Test-Harness entfernte den Ordner
+anschließend vollständig; vor Erstellung von Report und Dokumentation wurde
+der weiterhin saubere Working Tree des Ziel-Repositories bestätigt.
+
+Es wurden kein n8n-Workflow, kein GitHub-API-, HTTP-, Credential- oder
+Remote-Zugriff und keine Write-, Commit-, Push- oder Tag-Operation ausgeführt.
+
+Sanitisierter Report:
+
+```text
+exports/WF-0012_local-read-only-test-report_LRT-003_2026-08-09.json
+```
+
+Der Dokumentvertrag und der veröffentlichte Workflow-Export bleiben
+`v0.1.1/released`.
